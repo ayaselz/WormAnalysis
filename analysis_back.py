@@ -6,6 +6,8 @@ import cv2
 import numpy as np
 import time
 
+from neurons import Neurons
+
 
 # class show_img_signal(QObject):
 #     progress = QtCore.Signal(QtGui.QPixmap, dict)
@@ -29,6 +31,9 @@ class ImageProcessingThread(QObject):
         super(ImageProcessingThread, self).__init__()
         self.is_paused = False
         self.is_killed = False
+        # ---添加：初始化Neurons类---
+        self.neurons = Neurons
+        # ---end---
 
     def loop(self, parameter_dict, image_num, image_path, flip, start, end):
         for i in range(start, end + 1):
@@ -81,6 +86,9 @@ class ImageProcessingThread(QObject):
 
         right_centres = self.find_peak_point(
             image_8bit, parameter_dict['peak_circle'], parameter_dict['peak_ratio'])
+        # --- 将读取的亮点放入Neurons类进行加工 ---
+
+        # --- end ---
         print(right_centres)
         image_bright = self.image_bright(image_8bit, parameter_dict['alpha'], parameter_dict['beta'])
 
