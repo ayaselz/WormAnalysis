@@ -16,6 +16,7 @@ def match_score(previous, current):
 
 class Neurons(object):
     def __init__(self):
+        print("class Neurons generated")
         self.neurons = {"0": [],
                         "1": []}
 
@@ -42,17 +43,30 @@ class Neurons(object):
         print("previous:", previous)
         for i in range(len(previous)):
             position = previous[i]
+            # 确保position取值不是[-1, -1]
+            while position == [-1, -1]:
+                j = -2
+                position = self.neurons.get(str(i))[j]
+                j -= 1
             print(position)
             current_score = None
             candidate = []
             for item in neuron:
                 match = match_score(position, item)
                 print("the score of", item, "is", match)
-                if current_score is None or match < current_score:
+                if (current_score is None) or (match < current_score):
                     current_score = match
                     candidate = item
+
             # neuron.删除candidate
             print("Neurons_match:", candidate, "is the candidate of", position)
-            neuron.remove(candidate)
+            # 下面检查是否有任意candidate为空列表。
+            # 当存在candidate为空的时候，说明读取到的亮点数少于实际神经元数。
+            # 这种情况下，将该candidate坐标标记为[-1, -1]以示异常
+            if not candidate:
+                candidate = [-1, -1]
+            else:
+                # 检查没问题的情况下，再remove
+                neuron.remove(candidate)
             # matching得到的位置
             self.neurons[str(i)].append(candidate)

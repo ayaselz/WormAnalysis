@@ -32,7 +32,7 @@ class ImageProcessingThread(QObject):
         self.is_paused = False
         self.is_killed = False
         # ---添加：初始化Neurons类---
-        self.neurons = Neurons
+        self.neurons = Neurons()
         # ---end---
 
     def loop(self, parameter_dict, image_num, image_path, flip, start, end):
