@@ -8,15 +8,12 @@ def assign(neurons: dict, neuron: list):
 
 
 def match_score(previous, current):
-    print("trigger: function match_score")
     """当只有两个neuron时，根据欧式距离得出分数"""
-    return np.sqrt((previous[0] - current[0]) ** 2
-                   + (previous[1] - current[1]) ** 2)
+    return (previous[0] - current[0]) ** 2 + (previous[1] - current[1]) ** 2
 
 
 class Neurons(object):
     def __init__(self):
-        print("class Neurons generated")
         self.neurons = {"0": [],
                         "1": []}
 
@@ -29,7 +26,6 @@ class Neurons(object):
         return [self.get_neurons()["0"][-1], self.get_neurons()["1"][-1]]
 
     def add_neuron(self, neuron: list):
-        print("trigger: Neurons.add_neuron")
         if self.neurons["0"]:
             # 执行匹配算法
             self.match(neuron)
@@ -38,9 +34,8 @@ class Neurons(object):
 
     def match(self, neuron: list):
         """执行算法（先尝试简单的距离尝试）"""
-        print("trigger: Neurons_match")
         previous = self.current_neuron()
-        print("previous:", previous)
+        print("previous neuron list:", previous)
         for i in range(len(previous)):
             position = previous[i]
             # 确保position取值不是[-1, -1]

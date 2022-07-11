@@ -80,7 +80,7 @@ class ImageProcessingThread(QObject):
 
             return image_16bit, image_8bit
         else:
-            print("wrong")
+            print("wrong in open_image")
 
     def process_image(self, parameter_dict, image_num, image_16bit, image_8bit):
 
@@ -88,9 +88,9 @@ class ImageProcessingThread(QObject):
             image_8bit, parameter_dict['peak_circle'], parameter_dict['peak_ratio'])
         # --- 将读取的亮点放入Neurons类进行加工 ---
         self.neurons.add_neuron(right_centres)
-        # --- end ---
         right_centres = self.neurons.current_neuron()
-        print(right_centres)
+        # --- end ---
+        print("right centres: ", right_centres)
         image_bright = self.image_bright(image_8bit, parameter_dict['alpha'], parameter_dict['beta'])
 
         image_bright = self.label(
@@ -282,11 +282,18 @@ class ImageProcessingThread(QObject):
         return rotated
 
     def label(self, image, centres, label_radius, bias_row, bias_column):
-        for centre in centres:
-            label_text = str(centres.index(centre))
-            self.draw_rectangle(image, centre[1], centre[0], label_text, label_radius)
+        for key in self.neurons.get_neurons():
+            centre = self.neurons.get_neurons().get(key)[-1]
+            self.draw_rectangle(image, centre[1], centre[0], key, label_radius)
 
             left_row, left_column = self.find_left_centre(centre[1], centre[0], bias_row, bias_column)
-            self.draw_rectangle(image, left_column, left_row, label_text, label_radius)
-            break
+            self.draw_rectangle(image, left_column, left_row, key, label_radius)
         return image
+        # for centre in centres:
+        #     label_text = str(centres.index(centre))
+        #     self.draw_rectangle(image, centre[1], centre[0], label_text, label_radius)
+        #
+        #     left_row, left_column = self.find_left_centre(centre[1], centre[0], bias_row, bias_column)
+        #     self.draw_rectangle(image, left_column, left_row, label_text, label_radius)
+        #     break
+        # return image
