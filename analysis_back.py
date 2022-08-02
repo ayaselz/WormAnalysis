@@ -72,7 +72,8 @@ class ImageProcessingThread(QObject):
                 image_16bit, image_8bit = self.transfer_16bit_to_8bit(image_path_n)
             print(image_16bit.shape)
             if image_16bit is None:
-                print("wrong open image")
+                raise Exception("wrong opening: image is none")
+                # print("wrong open image")
 
             if flip:
                 image_8bit = self.flip_y(image_8bit)

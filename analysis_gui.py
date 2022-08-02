@@ -447,13 +447,13 @@ class MainWidget(QWidget):
     #     self.ui.MplWidget.canvas.draw()
 
 
-if __name__ == '__main__':
-    dirname = os.path.dirname(PySide2.__file__)
-    plugin_path = os.path.join(dirname, 'plugins', 'platforms')
-    os.environ['QT_QPA_PLATFORM_PLUGIN_PATH'] = plugin_path
-    print("plugin path:", plugin_path)
-
-    app = QApplication([])
-    window = MainWidget()
-    window.show()
-    app.exec_()
+# if __name__ == '__main__':
+#     dirname = os.path.dirname(PySide2.__file__)
+#     plugin_path = os.path.join(dirname, 'plugins', 'platforms')
+#     os.environ['QT_QPA_PLATFORM_PLUGIN_PATH'] = plugin_path
+#     print("plugin path:", plugin_path)
+#
+#     app = QApplication([])
+#     window = MainWidget()
+#     window.show()
+#     app.exec_()
