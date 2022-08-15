@@ -95,8 +95,8 @@ class MainWidget(QWidget):
         self.rows = []
         self.columns = []
 
+        # 实例化线程类/instantiate QThread class and start back-end
         self.thread = QThread()
-        # 实例化线程类
         self.i_thread = ImageProcessingThread()
         # moveToThread方法把实例化线程移到Thread管理
         self.i_thread.moveToThread(self.thread)
@@ -446,14 +446,3 @@ class MainWidget(QWidget):
     #     self.ui.MplWidget.canvas.axes.set_title('Cosinus - Sinus Signals')
     #     self.ui.MplWidget.canvas.draw()
 
-
-# if __name__ == '__main__':
-#     dirname = os.path.dirname(PySide2.__file__)
-#     plugin_path = os.path.join(dirname, 'plugins', 'platforms')
-#     os.environ['QT_QPA_PLATFORM_PLUGIN_PATH'] = plugin_path
-#     print("plugin path:", plugin_path)
-#
-#     app = QApplication([])
-#     window = MainWidget()
-#     window.show()
-#     app.exec_()
