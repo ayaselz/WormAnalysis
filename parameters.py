@@ -1,3 +1,8 @@
+__author__ = "{{Wencan Peng}} ({{46222378}})"
+__email__ = "wencan.peng@uqconnect.edu.au"
+__date__ = "16/08/2022"
+__version__ = "2.0"
+
 class Parameters(object):
     def __init__(self, alpha: int = 3, beta: int = 0,
                  peak_circle: int = 6, peak_ratio: float = 0.4,
@@ -21,7 +26,7 @@ class Parameters(object):
         self.__right_circle = right_circle
         self.__right_ratio = right_ratio
         self.__left_circle = left_circle
-        self.__left_ratio: float = left_ratio
+        self.__left_ratio = left_ratio
 
     @property
     def alpha(self) -> int:

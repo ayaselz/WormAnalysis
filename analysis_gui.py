@@ -1,4 +1,6 @@
-import PySide2
+import os
+import re
+
 from PySide2.QtWidgets import *
 from PySide2.QtUiTools import QUiLoader
 from PySide2.QtCore import QFile
@@ -8,18 +10,14 @@ from matplotlib.backends.backend_qt5agg import \
     NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
 
-import sys
 from analysis_back import *
-import os
-import re
-import csv
+from parameters import Parameters
 
-import numpy as np
-import random
 
-__author__ = "{{Yuliang_Liu}} ({{s4564914}})"
-__email__ = "yuliang.liu@uqconnect.edu.au"
-__date__ = "19/03/2022"
+__author__ = "{{Yuliang_Liu}} ({{s4564914}}), {{Wencan Peng}} ({{46222378}})"
+__email__ = "yuliang.liu@uqconnect.edu.au, wencan.peng@uqconnect.edu.au"
+__date__ = "16/08/2022"
+__version__ = "2.0"
 
 
 # ------------------ MplWidget ------------------
@@ -71,17 +69,11 @@ class MainWidget(QWidget):
         self.stop = False
         self.flip = False
 
-        self.parameter_dict = {
-            'alpha': 3, 'beta': 0,
-            'peak_circle': 6, 'peak_ratio': 0.4,
-            'row_bias': 0, 'column_bias': 0,
-            'label_radius': 7,
-            'right_black': 0, 'left_black': 0,
-            'right_black_bias': 0, 'left_black_bias': 0,
-            'right_circle': 5, 'right_ratio': 0.6,
-            'left_circle': 5, 'left_ratio': 0.6,
-        }
-
+        # instantiate and initialize Parameters class (with default values)
+        # 实例化初始Parameters类（有默认值）
+        self.parameters = Parameters()
+        # show the parameter values in UI
+        # 在GUI界面显示参数值
         self.initialization_parameter()
 
         self.result_dict = {}
@@ -179,21 +171,22 @@ class MainWidget(QWidget):
 
         self.set_parameter()
         self.i_thread.start_image_process_thread_signal.emit(
-            self.parameter_dict,
+            self.parameters,
+            # self.parameter_dict,
             self.image_num, self.image_path, self.flip)
 
     def button_next(self):
         self.image_num += 1
         self.set_parameter()
         self.i_thread.start_image_process_thread_signal.emit(
-            self.parameter_dict,
+            self.parameters,
             self.image_num, self.image_path, self.flip)
 
     def button_last(self):
         self.image_num -= 1
         self.set_parameter()
         self.i_thread.start_image_process_thread_signal.emit(
-            self.parameter_dict,
+            self.parameters,
             self.image_num, self.image_path, self.flip)
 
     def button_kill(self):
@@ -211,7 +204,7 @@ class MainWidget(QWidget):
         self.image_num = int(self.ui.textEdit_num.toPlainText())
         self.set_parameter()
         self.i_thread.start_image_process_thread_signal.emit(
-            self.parameter_dict,
+            self.parameters,
             self.image_num, self.image_path, self.flip)
 
     def button_run(self):
@@ -230,84 +223,77 @@ class MainWidget(QWidget):
         # for i in range(start, end + 1):
         # if self.stop:
         #     break
-        self.i_thread.loop_signal.emit(self.parameter_dict,
+        self.i_thread.loop_signal.emit(self.parameters,
                                        self.image_num, self.image_path,
                                        self.flip, start, end)
         self.image_num += 1
 
     def button_refresh(self, bias_row=0, bias_column=0):
         self.set_parameter()
-        self.parameter_dict['row_bias'] += bias_row
-        self.parameter_dict['column_bias'] += bias_column
+        self.parameters.row_bias += bias_row
+        self.parameters.column_bias += bias_column
         self.initialization_parameter()
         self.i_thread.start_image_process_thread_signal.emit(
-            self.parameter_dict,
+            self.parameters,
             self.image_num, self.image_path, self.flip)
 
     def checkbox_mirror_symmetry(self):
         self.flip = not self.flip
         self.set_parameter()
         self.i_thread.start_image_process_thread_signal.emit(
-            self.parameter_dict,
+            self.parameters,
             self.image_num, self.image_path, self.flip)
 
     def initialization_parameter(self):
-        self.ui.textEdit_alpha.setText(str(self.parameter_dict['alpha']))
-        self.ui.textEdit_beta.setText(str(self.parameter_dict['beta']))
+        self.ui.textEdit_alpha.setText(str(self.parameters.alpha))
+        self.ui.textEdit_beta.setText(str(self.parameters.beta))
 
-        self.ui.textEdit_peak_ratio.setText(
-            str(self.parameter_dict['peak_ratio']))
-        self.ui.textEdit_peak_circle.setText(
-            str(self.parameter_dict['peak_circle']))
+        self.ui.textEdit_peak_ratio.setText(str(self.parameters.peak_ratio))
+        self.ui.textEdit_peak_circle.setText(str(self.parameters.peak_circle))
 
-        self.ui.textEdit_right_ratio.setText(
-            str(self.parameter_dict['right_ratio']))
-        self.ui.textEdit_right_circle.setText(
-            str(self.parameter_dict['right_circle']))
+        self.ui.textEdit_right_ratio.setText(str(self.parameters.right_ratio))
+        self.ui.textEdit_right_circle.setText(str(self.parameters.right_circle))
 
-        self.ui.textEdit_row_bias.setText(str(self.parameter_dict['row_bias']))
-        self.ui.textEdit_column_bias.setText(
-            str(self.parameter_dict['column_bias']))
+        self.ui.textEdit_row_bias.setText(str(self.parameters.row_bias))
+        self.ui.textEdit_column_bias.setText(str(self.parameters.column_bias))
 
-        self.ui.textEdit_left_ratio.setText(
-            str(self.parameter_dict['left_ratio']))
-        self.ui.textEdit_left_circle.setText(
-            str(self.parameter_dict['left_circle']))
+        self.ui.textEdit_left_ratio.setText(str(self.parameters.left_ratio))
+        self.ui.textEdit_left_circle.setText(str(self.parameters.left_circle))
 
-        self.ui.textEdit_right_black_bias.setText(
-            str(self.parameter_dict['right_black_bias']))
-        self.ui.textEdit_left_black_bias.setText(
-            str(self.parameter_dict['left_black_bias']))
+        self.ui.textEdit_right_black_bias\
+            .setText(str(self.parameters.right_black_bias))
+        self.ui.textEdit_left_black_bias\
+            .setText(str(self.parameters.left_black_bias))
 
-    def set_parameter(self):
-        self.parameter_dict['alpha'] = float(
-            self.ui.textEdit_alpha.toPlainText())
-        self.parameter_dict['beta'] = float(self.ui.textEdit_beta.toPlainText())
+    def set_parameter(self) -> None:
+        """This method imports parameter changes from the GUI to Parameters()"""
+        self.parameters.alpha = int(self.ui.textEdit_alpha.toPlainText())
+        self.parameters.beta = int(self.ui.textEdit_beta.toPlainText())
 
-        self.parameter_dict['peak_ratio'] = float(
-            self.ui.textEdit_peak_ratio.toPlainText())
-        self.parameter_dict['peak_circle'] = int(
-            self.ui.textEdit_peak_circle.toPlainText())
+        self.parameters.peak_ratio \
+            = float(self.ui.textEdit_peak_ratio.toPlainText())
+        self.parameters.peak_circle \
+            = int(self.ui.textEdit_peak_circle.toPlainText())
 
-        self.parameter_dict['right_ratio'] = float(
-            self.ui.textEdit_right_ratio.toPlainText())
-        self.parameter_dict['right_circle'] = int(
-            self.ui.textEdit_right_circle.toPlainText())
+        self.parameters.right_ratio \
+            = float(self.ui.textEdit_right_ratio.toPlainText())
+        self.parameters.right_circle \
+            = int(self.ui.textEdit_right_circle.toPlainText())
 
-        self.parameter_dict['row_bias'] = int(
-            self.ui.textEdit_row_bias.toPlainText())
-        self.parameter_dict['column_bias'] = int(
-            self.ui.textEdit_column_bias.toPlainText())
+        self.parameters.row_bias \
+            = int(self.ui.textEdit_row_bias.toPlainText())
+        self.parameters.column_bias\
+            = int(self.ui.textEdit_column_bias.toPlainText())
 
-        self.parameter_dict['left_ratio'] = float(
-            self.ui.textEdit_left_ratio.toPlainText())
-        self.parameter_dict['left_circle'] = int(
-            self.ui.textEdit_left_circle.toPlainText())
+        self.parameters.left_ratio \
+            = float(self.ui.textEdit_left_ratio.toPlainText())
+        self.parameters.left_circle \
+            = int(self.ui.textEdit_left_circle.toPlainText())
 
-        self.parameter_dict['right_black_bias'] = int(
-            self.ui.textEdit_right_black_bias.toPlainText())
-        self.parameter_dict['left_black_bias'] = int(
-            self.ui.textEdit_left_black_bias.toPlainText())
+        self.parameters.right_black_bias \
+            = int(self.ui.textEdit_right_black_bias.toPlainText())
+        self.parameters.left_black_bias \
+            = int(self.ui.textEdit_left_black_bias.toPlainText())
 
     def show_image(self, q_pixmap, result_dict):
         self.ui.label_image.setPixmap(q_pixmap)

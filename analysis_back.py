@@ -7,25 +7,28 @@ import numpy as np
 import time
 
 from neurons import Neurons
+from parameters import Parameters
 
 
-# class show_img_signal(QObject):
-#     progress = QtCore.Signal(QtGui.QPixmap, dict)
-#
-# class start_image_process_thread_signal(QObject):
-#     progress = QtCore.Signal(dict, int, str, bool)
-#
-# class Loop_signal (QObject):
-#     progress = QtCore.Signal(dict, int, str, bool, int, int)
+__author__ = "{{Yuliang_Liu}} ({{s4564914}}), {{Wencan Peng}} ({{46222378}})"
+__email__ = "yuliang.liu@uqconnect.edu.au, wencan.peng@uqconnect.edu.au"
+__date__ = "16/08/2022"
+__version__ = "2.0"
 
-# 该类是作为程序后端负责打开并且处理图像的线程
+
 class ImageProcessingThread(QObject):
+    """
+    This class opens the thread at the back end, responding to image processing.
+    """
+    # 该类是作为程序后端负责打开并且处理图像的线程
+    # data signal of image
     # 处理完毕图像数据信号
     show_img_signal = QtCore.Signal(QtGui.QPixmap, dict)
     show_img_signal_loop = QtCore.Signal(QtGui.QPixmap, dict)
+    #  signal of parameters
     # 线程接收参数信号
-    start_image_process_thread_signal = QtCore.Signal(dict, int, str, bool)
-    loop_signal = QtCore.Signal(dict, int, str, bool, int, int)
+    start_image_process_thread_signal = QtCore.Signal(Parameters, int, str, bool)
+    loop_signal = QtCore.Signal(Parameters, int, str, bool, int, int)
 
     def __init__(self):
         super(ImageProcessingThread, self).__init__()
@@ -35,9 +38,9 @@ class ImageProcessingThread(QObject):
         self.neurons = Neurons()
         # ---end---
 
-    def loop(self, parameter_dict, image_num, image_path, flip, start, end):
+    def loop(self, parameters, image_num, image_path, flip, start, end):
         for i in range(start, end + 1):
-            self.image_processing_loop(parameter_dict, i, image_path, flip)
+            self.image_processing_loop(parameters, i, image_path, flip)
             time.sleep(0.1)
             while self.is_paused:
                 time.sleep(0.1)
@@ -45,25 +48,25 @@ class ImageProcessingThread(QObject):
             if self.is_killed:
                 break
 
-    def image_processing_loop(self, parameter_dict, image_num, image_path, flip):
+    def image_processing_loop(self, parameters, image_num, image_path, flip):
 
-        image_16bit, image_8bit = self.open_image(parameter_dict, image_num, image_path, flip)
+        image_16bit, image_8bit = self.open_image(parameters, image_num, image_path, flip)
 
-        result_dict, image_bright = self.process_image(parameter_dict, image_num, image_16bit, image_8bit)
+        result_dict, image_bright = self.process_image(parameters, image_num, image_16bit, image_8bit)
         q_pixmap = self.cv_to_qpix(image_bright)
 
         self.show_img_signal_loop.emit(q_pixmap, result_dict)
 
-    def image_processing(self, parameter_dict, image_num, image_path, flip):
+    def image_processing(self, parameters, image_num, image_path, flip):
 
-        image_16bit, image_8bit = self.open_image(parameter_dict, image_num, image_path, flip)
+        image_16bit, image_8bit = self.open_image(parameters, image_num, image_path, flip)
 
-        result_dict, image_bright = self.process_image(parameter_dict, image_num, image_16bit, image_8bit)
+        result_dict, image_bright = self.process_image(parameters, image_num, image_16bit, image_8bit)
         q_pixmap = self.cv_to_qpix(image_bright)
 
         self.show_img_signal.emit(q_pixmap, result_dict)
 
-    def open_image(self, parameter_dict, num, image_path, flip):
+    def open_image(self, parameters, num, image_path, flip):
         if image_path != '':
             image_path_n = image_path + '/' + f'{num:04}' + '.tif'
             image_16bit, image_8bit = self.transfer_16bit_to_8bit(image_path_n)
@@ -83,33 +86,34 @@ class ImageProcessingThread(QObject):
         else:
             print("wrong in open_image")
 
-    def process_image(self, parameter_dict, image_num, image_16bit, image_8bit):
+    def process_image(self, parameters, image_num, image_16bit, image_8bit):
 
         right_centres = self.find_peak_point(
-            image_8bit, parameter_dict['peak_circle'], parameter_dict['peak_ratio'])
+            image_8bit, parameters.peak_circle, parameters.peak_ratio)
         # --- 将读取的亮点放入Neurons类进行加工 ---
         self.neurons.add_neuron(right_centres)
         right_centres = self.neurons.current_neuron()
         # --- end ---
         print("right centres: ", right_centres)
-        image_bright = self.image_bright(image_8bit, parameter_dict['alpha'], parameter_dict['beta'])
+        image_bright = \
+            self.image_bright(image_8bit, parameters.alpha, parameters.beta)
 
         image_bright = self.label(
             image_bright, right_centres,
-            parameter_dict['label_radius'],
-            parameter_dict['row_bias'],
-            parameter_dict['column_bias']
+            parameters.label_radius,
+            parameters.row_bias,
+            parameters.column_bias
         )
         max_brightness, max_row, max_column = self.find_max_brightness(image_8bit, right_centres)
-        right_black = self.right_black(image_16bit, parameter_dict['right_black_bias'])
-        left_black = self.left_black(image_16bit, parameter_dict['left_black_bias'])
+        right_black = self.right_black(image_16bit, parameters.right_black_bias)
+        left_black = self.left_black(image_16bit, parameters.left_black_bias)
 
         result_dict = self.calculate_brightness(
             image_16bit, image_num, max_row, max_column,
             right_black, left_black,
-            parameter_dict['right_circle'], parameter_dict['right_ratio'],
-            parameter_dict['row_bias'],
-            parameter_dict['column_bias']
+            parameters.right_circle, parameters.right_ratio,
+            parameters.row_bias,
+            parameters.column_bias
         )
         result_dict['right_black'] = right_black
         result_dict['left_black'] = left_black
