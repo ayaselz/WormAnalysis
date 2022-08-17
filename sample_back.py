@@ -8,12 +8,7 @@ import time
 
 from neurons import Neurons
 from parameters import Parameters
-
-
-__author__ = "{{Yuliang_Liu}} ({{s4564914}}), {{Wencan Peng}} ({{46222378}})"
-__email__ = "yuliang.liu@uqconnect.edu.au, wencan.peng@uqconnect.edu.au"
-__date__ = "16/08/2022"
-__version__ = "2.0"
+from image import Image
 
 
 class ImageProcessingThread(QObject):
@@ -33,15 +28,14 @@ class ImageProcessingThread(QObject):
 
     def __init__(self):
         super(ImageProcessingThread, self).__init__()
+        # initialize signals for pausing and killing the loop
         self.is_paused = False
         self.is_killed = False
-        # ---添加：初始化Neurons类---
-        self.neurons = Neurons()
-        # ---end---
 
     def loop(self, parameters, image_num, image_path, flip, start, end):
         for i in range(start, end + 1):
             self.image_processing_loop(parameters, i, image_path, flip)
+            # wait for 0.1 and then process the next image
             time.sleep(0.1)
 
             while self.is_paused:
@@ -49,9 +43,19 @@ class ImageProcessingThread(QObject):
             if self.is_killed:
                 break
 
-    def image_processing_loop(self, parameters, image_num, image_path, flip):
-        image_16bit, image_8bit \
-            = self.open_image(parameters, image_num, image_path, flip)
+    def image_processing_loop(self, parameters: Parameters, image_num: int,
+                              image_path: str, flip: bool) -> None:
+        """
+        Process the (image_num)th image in the Back-end loop.
+        :param parameters:
+        :param image_num:
+        :param image_path:
+        :param flip:
+        :return:
+        """
+        image = Image(image_path, image_num, parameters, flip)
+        image_16bit, image_8bit = image.bit16, image.bit8
+        # 最后要得到Neurons的结果、image亮度（？亮的image），以方便后续
         result_dict, image_bright \
             = self.process_image(parameters, image_num, image_16bit, image_8bit)
         q_pixmap = self.cv_to_qpix(image_bright)
@@ -60,33 +64,13 @@ class ImageProcessingThread(QObject):
 
     def image_processing(self, parameters, image_num, image_path, flip):
         # 该方法连接了前端（作为槽函数
-        image_16bit, image_8bit \
-            = self.open_image(parameters, image_num, image_path, flip)
+        image = Image(image_path, image_num, parameters, flip)
+        image_16bit, image_8bit = image.bit16, image.bit8
         result_dict, image_bright \
             = self.process_image(parameters, image_num, image_16bit, image_8bit)
         q_pixmap = self.cv_to_qpix(image_bright)
 
         self.show_img_signal.emit(q_pixmap, result_dict)
-
-    def open_image(self, parameters, num, image_path, flip):
-        if image_path != '':
-            image_path_n = image_path + '/' + f'{num:04}' + '.tif'
-            image_16bit, image_8bit = self.transfer_16bit_to_8bit(image_path_n)
-            if image_16bit is None:
-                image_path_n = image_path + '/' + f'{num}' + '.tif'
-                image_16bit, image_8bit = self.transfer_16bit_to_8bit(image_path_n)
-            print(image_16bit.shape)
-            if image_16bit is None:
-                raise Exception("wrong opening: image is none")
-                # print("wrong open image")
-
-            if flip:
-                image_8bit = self.flip_y(image_8bit)
-                image_16bit = self.flip_y(image_16bit)
-
-            return image_16bit, image_8bit
-        else:
-            print("wrong in open_image")
 
     def process_image(self, parameters, image_num, image_16bit, image_8bit):
 
@@ -131,20 +115,6 @@ class ImageProcessingThread(QObject):
                               img.shape[1],  # 行字节数
                               QtGui.QImage.Format_Grayscale8)
         return QtGui.QPixmap.fromImage(qt_img)
-
-    def transfer_16bit_to_8bit(self, image_path):
-        image_16bit = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
-        if image_16bit is None:
-            return None, None
-        min_16bit = np.min(image_16bit)
-        max_16bit = np.max(image_16bit)
-        image_8bit = np.array(np.rint(255 * ((image_16bit - min_16bit) / (max_16bit - min_16bit))),
-                              dtype=np.uint8)
-        return image_16bit, image_8bit
-
-    def flip_y(self, image):
-        img_flip_y = cv2.flip(image, 1)
-        return img_flip_y
 
     def image_bright(self, image, alpha=3, beta=0):
         image_bright = cv2.convertScaleAbs(image, alpha=alpha, beta=beta)

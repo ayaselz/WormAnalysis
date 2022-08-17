@@ -35,16 +35,16 @@ class MplWidget(QWidget):
         self.canvas.axes = self.canvas.figure.add_subplot(111)
         self.setLayout(vertical_layout)
 
-    # ------------------ MainWidget ------------------
 
-
+# ------------------ MainWidget ------------------
 class MainWidget(QWidget):
 
     def __init__(self):
+        # open ui
         QWidget.__init__(self)
-        designer_file = QFile("ui.ui")
+        designer_file = QFile("wormanalysis.ui")
         designer_file.open(QFile.ReadOnly)
-
+        # load ui
         loader = QUiLoader()
         loader.registerCustomWidget(MplWidget)
         self.ui = loader.load(designer_file, self)
@@ -54,7 +54,7 @@ class MainWidget(QWidget):
         self.image_name = ''
         self.image_path = ''
         self.cwd = os.getcwd()
-        self.save_path = self.cwd + '\\1.csv'
+        self.save_path = os.path.join(self.cwd, '1.csv')
 
         self.position_file = ''
         self.x = []
@@ -87,7 +87,7 @@ class MainWidget(QWidget):
         self.rows = []
         self.columns = []
 
-        # 实例化线程类/instantiate QThread class and start back-end
+        # 实例化后端线程类/instantiate QThread class and start back-end
         self.thread = QThread()
         self.i_thread = ImageProcessingThread()
         # moveToThread方法把实例化线程移到Thread管理

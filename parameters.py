@@ -3,7 +3,13 @@ __email__ = "wencan.peng@uqconnect.edu.au"
 __date__ = "16/08/2022"
 __version__ = "2.0"
 
+
 class Parameters(object):
+    """
+    This class contains several parameters, including the scope when
+    analyzing images.
+    """
+
     def __init__(self, alpha: int = 3, beta: int = 0,
                  peak_circle: int = 6, peak_ratio: float = 0.4,
                  row_bias: int = 0, column_bias: int = 0,
@@ -12,6 +18,11 @@ class Parameters(object):
                  right_black_bias: int = 0, left_black_bias: int = 0,
                  right_circle: int = 5, right_ratio: float = 0.6,
                  left_circle: int = 5, left_ratio: float = 0.6) -> None:
+        """
+        Instantiation
+
+        :param
+        """
         self.__alpha = alpha
         self.__beta = beta
         self.__peak_circle = peak_circle
@@ -77,7 +88,7 @@ class Parameters(object):
     def column_bias(self, column_bias: int) -> None:
         self.__column_bias = column_bias
 
-# label_radius: int = 7,
+    # label_radius: int = 7,
     @property
     def label_radius(self) -> int:
         return self.__label_radius
@@ -85,7 +96,8 @@ class Parameters(object):
     @label_radius.setter
     def label_radius(self, label_radius: int) -> None:
         self.__label_radius = label_radius
-# right_black: int = 0, left_black: int = 0,
+
+    # right_black: int = 0, left_black: int = 0,
     @property
     def right_black(self) -> int:
         return self.__right_black
@@ -101,7 +113,8 @@ class Parameters(object):
     @left_black.setter
     def left_black(self, left_black: int) -> None:
         self.__left_black = left_black
-# right_black_bias: int = 0, left_black_bias: int = 0,
+
+    # right_black_bias: int = 0, left_black_bias: int = 0,
     @property
     def right_black_bias(self) -> int:
         return self.__right_black_bias
@@ -117,7 +130,8 @@ class Parameters(object):
     @left_black_bias.setter
     def left_black_bias(self, left_black_bias: int) -> None:
         self.__left_black_bias = left_black_bias
-# right_circle: int = 5, right_ratio: float = 0.6,
+
+    # right_circle: int = 5, right_ratio: float = 0.6,
     @property
     def right_circle(self) -> int:
         return self.__right_circle
@@ -133,7 +147,8 @@ class Parameters(object):
     @right_ratio.setter
     def right_ratio(self, right_ratio: float) -> None:
         self.__right_ratio = right_ratio
-# left_circle: int = 5, left_ratio: float = 0.6
+
+    # left_circle: int = 5, left_ratio: float = 0.6
     @property
     def left_circle(self) -> int:
         return self.__left_circle
@@ -149,4 +164,3 @@ class Parameters(object):
     @left_ratio.setter
     def left_ratio(self, left_ratio: float) -> None:
         self.__left_ratio = left_ratio
-

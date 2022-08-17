@@ -13,6 +13,7 @@ def match_score(previous, current):
 
 
 class Neurons(object):
+    # 神经元数量，读取csv（对应行的位置信息
     def __init__(self):
         self.neurons = {"0": [],
                         "1": []}
@@ -65,3 +66,11 @@ class Neurons(object):
                 neuron.remove(candidate)
             # matching得到的位置
             self.neurons[str(i)].append(candidate)
+
+
+class Neurons(object):
+    def __init__(self, image_num: int = 2) -> None:
+        self.image_num = image_num
+        # self.points = points
+
+
