@@ -1,6 +1,7 @@
 import os
 import re
 
+from PySide2 import QtWidgets
 from PySide2.QtWidgets import *
 from PySide2.QtUiTools import QUiLoader
 from PySide2.QtCore import QFile
@@ -10,9 +11,9 @@ from matplotlib.backends.backend_qt5agg import \
     NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
 
-from analysis_back import *
+from sample_back import *
 from parameters import Parameters
-
+from image import ImageInform, Image
 
 __author__ = "{{Yuliang_Liu}} ({{s4564914}}), {{Wencan Peng}} ({{46222378}})"
 __email__ = "yuliang.liu@uqconnect.edu.au, wencan.peng@uqconnect.edu.au"
@@ -42,6 +43,7 @@ class MainWidget(QWidget):
     def __init__(self):
         # open ui
         QWidget.__init__(self)
+        # the name of ui file
         designer_file = QFile("wormanalysis.ui")
         designer_file.open(QFile.ReadOnly)
         # load ui
@@ -62,11 +64,11 @@ class MainWidget(QWidget):
         self.ui.text_file_path_2.setText(self.save_path)
 
         self.image_num = 0
-        self.image_8bit = None
-        self.image_16bit = None
-        self.image_bright = None
+        # self.image_8bit = None
+        # self.image_16bit = None
+        # self.image_bright = None
 
-        self.stop = False
+        # self.stop = False
         self.flip = False
 
         # instantiate and initialize Parameters class (with default values)
@@ -76,7 +78,7 @@ class MainWidget(QWidget):
         # 在GUI界面显示参数值
         self.initialization_parameter()
 
-        self.result_dict = {}
+        self.img_inform = None  # it should be ImageInform class
         self.results = []
 
         self.image_nums = []
@@ -84,9 +86,8 @@ class MainWidget(QWidget):
         self.left_brightness = []
         self.brightness = []
 
-        self.rows = []
-        self.columns = []
-
+        # self.rows = []
+        # self.columns = []
         # 实例化后端线程类/instantiate QThread class and start back-end
         self.thread = QThread()
         self.i_thread = ImageProcessingThread()
@@ -158,21 +159,12 @@ class MainWidget(QWidget):
 
         self.ui.text_file_path.setText(self.image_path)
 
-        # if self.image_path == '':
-        #     self.image_path = QFileDialog.getExistingDirectory(self, 'Select image')
-        #     self.ui.text_file_path.setText(self.image_path)
-        #     print(self.image_path)
-        #     print('\nCancel')
-
         regex = re.compile(r'\d+')
         if bool(re.search(r'\d', self.image_name)):
             self.image_num = int(max(regex.findall(self.image_name)))
-            print("image number: ", self.image_num)
-
         self.set_parameter()
         self.i_thread.start_image_process_thread_signal.emit(
             self.parameters,
-            # self.parameter_dict,
             self.image_num, self.image_path, self.flip)
 
     def button_next(self):
@@ -260,9 +252,9 @@ class MainWidget(QWidget):
         self.ui.textEdit_left_ratio.setText(str(self.parameters.left_ratio))
         self.ui.textEdit_left_circle.setText(str(self.parameters.left_circle))
 
-        self.ui.textEdit_right_black_bias\
+        self.ui.textEdit_right_black_bias \
             .setText(str(self.parameters.right_black_bias))
-        self.ui.textEdit_left_black_bias\
+        self.ui.textEdit_left_black_bias \
             .setText(str(self.parameters.left_black_bias))
 
     def set_parameter(self) -> None:
@@ -282,7 +274,7 @@ class MainWidget(QWidget):
 
         self.parameters.row_bias \
             = int(self.ui.textEdit_row_bias.toPlainText())
-        self.parameters.column_bias\
+        self.parameters.column_bias \
             = int(self.ui.textEdit_column_bias.toPlainText())
 
         self.parameters.left_ratio \
@@ -295,45 +287,48 @@ class MainWidget(QWidget):
         self.parameters.left_black_bias \
             = int(self.ui.textEdit_left_black_bias.toPlainText())
 
-    def show_image(self, q_pixmap, result_dict):
+    def show_image(self, q_pixmap, img_inform):
+        # 用于显示图片
         self.ui.label_image.setPixmap(q_pixmap)
-        self.result_dict = result_dict
+        # 用于刷新image information
+        self.img_inform = img_inform
         self.set_result()
-        self.results.append(result_dict)
+        self.results.append(img_inform)
+        self.draw_brightness(img_inform)
+        self.draw_position(img_inform)
 
-        self.draw_brightness(result_dict)
-        self.draw_position(result_dict)
-
-    def show_image_loop(self, q_pixmap, result_dict):
+    def show_image_loop(self, q_pixmap, img_inform):
         self.ui.label_image.setPixmap(q_pixmap)
-        self.result_dict = result_dict
+        self.img_inform = img_inform
         self.set_result()
-        self.results.append(result_dict)
-        self.draw_brightness(result_dict)
-        self.draw_position(result_dict)
-        self.write_csv(result_dict, self.dataframe)
+        self.results.append(img_inform)
+        self.draw_brightness(img_inform)
+        self.draw_position(img_inform)
+        self.write_csv(img_inform, self.dataframe)
 
-    def write_csv(self, result_dict, dataframe):
-
+    def write_csv(self, img_inform: ImageInform, dataframe):
+        # D:\UQ\DECO7861_master_thesis\Wormanalysis\analysis_gui.py:311:
+        # FutureWarning: The frame.append method is deprecated and will be
+        # removed from pandas in a future version. Use pandas.concat instead.
+        # dataframe.append(pd.DataFrame({
+        # (currently v1.4.3)
         dataframe = \
             dataframe.append(pd.DataFrame({
-                'Right_row': [result_dict['right_row']],
-                'Right_column': [result_dict['right_column']],
-                'Right_brightness': [result_dict['right_brightness']],
-                'Left_row': [result_dict['left_row']],
-                'Left_column': [result_dict['left_column']],
-                'Left_brightness': [result_dict['left_brightness']],
-                'Brightness': [result_dict['brightness']]}),
+                'Right_row': [img_inform.right_row],
+                'Right_column': [img_inform.right_column],
+                'Right_brightness': [img_inform.right_brightness],
+                'Left_row': [img_inform.left_row],
+                'Left_column': [img_inform.left_column],
+                'Left_brightness': [img_inform.left_brightness],
+                'Brightness': [img_inform.brightness]}),
                 ignore_index=True)
 
         dataframe.to_csv(self.save_path, sep=',', encoding='utf-8')
 
     def open_position_file(self):
-        self.position_file, _ = QFileDialog.getOpenFileName(self,
-                                                            'Select position file',
-                                                            '',
-                                                            'Position_file(*.csv)')
-        # print(self.position_file)
+        self.position_file, _ \
+            = QFileDialog.getOpenFileName(self, 'Select position file', '',
+                                          'Position_file(*.csv)')
         data = pd.read_csv(self.position_file, header=None)
         data = data.values
         scale = 1.1
@@ -349,13 +344,10 @@ class MainWidget(QWidget):
         self.ui.MplWidget_2.canvas.axes.set_title('Position')
         self.ui.MplWidget_2.canvas.draw()
 
-    def draw_position(self, result_dict):
-        length = result_dict['image_num']
-        # print(length)
+    def draw_position(self, img_inform: ImageInform):
+        length = img_inform.num
         x = self.x[:length]
         y = self.y[:length]
-        # print(x)
-        # print(y)
 
         self.ui.MplWidget_2.canvas.axes.clear()
         self.ui.MplWidget_2.canvas.axes.scatter(x, y)
@@ -363,22 +355,11 @@ class MainWidget(QWidget):
         self.ui.MplWidget_2.canvas.axes.set_title('Position')
         self.ui.MplWidget_2.canvas.draw()
 
-    # def draw_position_old(self, result_dict):
-    #     self.rows.append(result_dict['right_row'])
-    #     self.columns.append(result_dict['right_column'])
-    #     self.rows.append(result_dict['left_row'])
-    #     self.columns.append(result_dict['left_column'])
-    #
-    #     self.ui.MplWidget_2.canvas.axes.clear()
-    #     self.ui.MplWidget_2.canvas.axes.scatter(self.columns, self.rows)
-    #     self.ui.MplWidget_2.canvas.axes.set_title('Position')
-    #     self.ui.MplWidget_2.canvas.draw()
+    def draw_brightness(self, img_inform: ImageInform):
 
-    def draw_brightness(self, result_dict):
-
-        self.image_nums.append(result_dict['image_num'])
-        self.right_brightness.append((result_dict['right_brightness']))
-        self.left_brightness.append((result_dict['left_brightness']))
+        self.image_nums.append(img_inform.num)
+        self.right_brightness.append((img_inform.right_brightness))
+        self.left_brightness.append((img_inform.left_brightness))
         # self.brightness.append((result_dict['brightness']))
 
         self.ui.MplWidget.canvas.axes.clear()
@@ -393,42 +374,24 @@ class MainWidget(QWidget):
         self.ui.MplWidget.canvas.draw()
 
     def set_result(self):
-        # 有用的
         self.initialization_parameter()
-        self.ui.textEdit_num.setText(str(self.result_dict['image_num']))
+        self.ui.textEdit_num.setText(str(self.img_inform.num))
 
         self.ui.text_right_coordinate.setText(
-            str(self.result_dict['right_row']) + ':' +
-            str(self.result_dict['right_column'])
+            str(self.img_inform.right_row) + ':' +
+            str(self.img_inform.right_column)
         )
         self.ui.text_right_brightness.setText(
-            str(self.result_dict['right_brightness']))
+            str(self.img_inform.right_brightness))
 
         self.ui.text_left_coordinate.setText(
-            str(self.result_dict['left_row']) + ':' +
-            str(self.result_dict['left_column'])
+            str(self.img_inform.left_row) + ':' +
+            str(self.img_inform.left_column)
         )
         self.ui.text_left_brightness.setText(
-            str(self.result_dict['left_brightness']))
+            str(self.img_inform.left_brightness))
 
-        self.ui.text_brightness.setText(str(self.result_dict['brightness']))
-        self.ui.text_right_black.setText(str(self.result_dict['right_black']))
-        self.ui.text_left_black.setText(str(self.result_dict['left_black']))
-
-    # def update_graph(self):
-    #     fs = 500
-    #     f = random.randint(1, 100)
-    #     ts = 1 / fs
-    #     length_of_signal = 100
-    #     t = np.linspace(0, 1, length_of_signal)
-    #
-    #     cosinus_signal = np.cos(2 * np.pi * f * t)
-    #     sinus_signal = np.sin(2 * np.pi * f * t)
-    #
-    #     self.ui.MplWidget.canvas.axes.clear()
-    #     self.ui.MplWidget.canvas.axes.plot(t, cosinus_signal)
-    #     self.ui.MplWidget.canvas.axes.plot(t, sinus_signal)
-    #     self.ui.MplWidget.canvas.axes.legend(('cosinus', 'sinus'), loc='upper right')
-    #     self.ui.MplWidget.canvas.axes.set_title('Cosinus - Sinus Signals')
-    #     self.ui.MplWidget.canvas.draw()
+        self.ui.text_brightness.setText(str(self.img_inform.brightness))
+        self.ui.text_right_black.setText(str(self.img_inform.right_black))
+        self.ui.text_left_black.setText(str(self.img_inform.left_black))
 

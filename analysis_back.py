@@ -254,11 +254,9 @@ class ImageProcessingThread(QObject):
 
         right_light_array = self.right_array(image, row, column, radius, ratio, right_black)
 
-        print(right_light_array)
         left_light_array = \
             self.left_array(image, left_row, left_column, right_light_array, radius, left_black)
 
-        print(left_light_array)
         right_brightness = self.mean_in_array(right_light_array)
         left_brightness = self.mean_in_array(left_light_array)
         result_dict = {
