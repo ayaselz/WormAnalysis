@@ -11,7 +11,7 @@ from matplotlib.backends.backend_qt5agg import \
     NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
 
-from sample_back import *
+from analysis_back import *
 from parameters import Parameters
 from image import ImageInform, Image
 
