@@ -306,9 +306,10 @@ class Image(object):
 
     def labelled(self, neurons: dict):
         # --- 设置一个默认的neurons？ ---
-        labelled_image = cv2.convertScaleAbs(self.bit8,
-                                             float(self.parameters.alpha),
-                                             float(self.parameters.beta))
+        labelled_image = self.image_bright(self.bit8,
+                                           self.parameters.alpha,
+                                           self.parameters.beta)
+
         for key in neurons:
             # draw rectangles and text for the right-half image
             centre = neurons.get(key)
@@ -361,3 +362,7 @@ class Image(object):
                              left_row, left_column,
                              left_brightness, left_black)
         return inform
+
+    def image_bright(self, image, alpha=3, beta=0):
+        image_bright = cv2.convertScaleAbs(image, alpha=alpha, beta=beta)
+        return image_bright
