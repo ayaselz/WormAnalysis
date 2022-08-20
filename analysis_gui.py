@@ -191,6 +191,7 @@ class MainWidget(QWidget):
 
     def button_kill(self):
         self.i_thread.is_killed = True
+        self.i_thread.neuron_data.save_data(self.save_path)
 
     def button_pause(self):
         if not self.i_thread.is_paused:

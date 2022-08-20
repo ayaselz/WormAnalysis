@@ -1,5 +1,7 @@
 import csv
 
+from image import ImageInform
+
 
 def assign(neurons: dict, neuron: list):
     """Put a series neuron in the Neurons dict in order"""
@@ -83,12 +85,14 @@ class NeuronData(object):
     # （后端类实例需要一个self.data，在选择position file的button函数中需要传递路径）
     # 用于储存position信息（通过导入的csv文件；若无则空），
     # 处理csv的相关操作（给出对应序号图片的位置信息，读写csv），
-    # 保存分析时的data结果（不保存图片，只保存Neurons；结果用于写入csv）
+    # 保存分析时的data结果（不保存图片，只保存Neurons；结果用于写入csv）（注意和现有ui的results有什么区别）
+    # 最后通过stop按键触发保存
     def __init__(self) -> None:
         self.__position_path = ""
         # header: (追踪中心x，追踪中心y，pixel to len转换比例)
         self.__position_header = []
         self.__positions = []
+        self.__saves = []
 
     @property
     def position_path(self) -> str:
@@ -121,3 +125,43 @@ class NeuronData(object):
         # return [position[0], position[1],
         #         position[2] * trans_ratio, position[3] * trans_ratio]
         return self.__positions[image_num]
+
+    @property
+    def saves(self) -> list:
+        return self.__saves.copy()
+
+    @saves.setter
+    def saves(self, saves: list) -> None:
+        self.__saves = saves
+
+    def add_data(self, img_inform: ImageInform) -> None:
+        # 待补充：目前data采用key为0的neuron的数据
+        """
+        Add the given image information into saves for future save or
+        modification. If this information has been stored (check by image
+        number), replace the previous one. Otherwise, append the list.
+
+        :param img_inform: the given image information
+        """
+        for data in self.__saves:
+            if img_inform.num == data.num:
+                index = self.__saves.index(data)
+                self.__saves[index] = img_inform
+            else:
+                self.__saves.append(img_inform)
+
+    def save_data(self, save_path: str) -> None:
+        # 待补充：尚未链接信号与槽函数（预计在ui的save data里面
+        # 注意：现在只是正常运行程序，这个方法对应的结果还未测试
+        with open(save_path, 'w', encoding="utf-8", newline="") as file:
+            csv_writer = csv.writer(file)
+            results_head = ['image_num',
+                            'Right_row', 'Right_column', 'Right_brightness',
+                            'Left_row', 'Left_column', 'Left_brightness',
+                            'Brightness']
+            csv_writer.writerow(results_head)
+            for each in self.saves:
+                data = [each.num,
+                        each.right_row, each.right_column, each.right_brightness,
+                        each.left_row, each.left_column, each.left_brightness,
+                        each.brightness]

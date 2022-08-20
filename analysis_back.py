@@ -68,6 +68,7 @@ class ImageProcessingThread(QObject):
                               image_path: str, flip: bool) -> None:
         """
         Process the (image_num)th image in the Back-end loop.
+
         :param parameters:
         :param image_num:
         :param image_path:
@@ -75,11 +76,15 @@ class ImageProcessingThread(QObject):
         :return:
         """
         image = Image(image_path, image_num, parameters, flip)
+        # neurons include the assignment algorithm
         neurons = helper(image.potential_neurons())
+        # update this-image inform with calculated neurons
         img_inform = image.inform(neurons)
+        # add this information into save list
+        self.neuron_data.add_data(img_inform)
+
         labelled_img = image.labelled(neurons)
         q_pixmap = cv_to_qpix(labelled_img)
-
         self.show_img_signal_loop.emit(q_pixmap, img_inform)
 
     def image_processing(self, parameters, image_num, image_path, flip):
@@ -87,8 +92,9 @@ class ImageProcessingThread(QObject):
         image = Image(image_path, image_num, parameters, flip)
         neurons = helper(image.potential_neurons())
         img_inform = image.inform(neurons)
+        self.neuron_data.add_data(img_inform)
+
         labelled_img = image.labelled(neurons)
         q_pixmap = cv_to_qpix(labelled_img)
-
         self.show_img_signal.emit(q_pixmap, img_inform)
 
