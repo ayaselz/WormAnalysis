@@ -105,6 +105,8 @@ class MainWidget(QWidget):
         # 部件处理
         self.ui.button_select_file.clicked.connect(self.button_select_file)
         self.ui.button_select_file_2.clicked.connect(self.button_save_data)
+        self.ui.button_select_file_3.clicked.connect(
+            self.button_select_position_file)
         self.ui.button_position.clicked.connect(self.open_position_file)
 
         self.ui.button_next.clicked.connect(self.button_next)
@@ -166,6 +168,12 @@ class MainWidget(QWidget):
         self.i_thread.start_image_process_thread_signal.emit(
             self.parameters,
             self.image_num, self.image_path, self.flip)
+
+    def button_select_position_file(self):
+        position_file_name, _ = QFileDialog.getOpenFileName(self, 'Select file',
+                                                            '',
+                                                            'files(*.csv)')
+        self.i_thread.neuron_data.position_path = position_file_name
 
     def button_next(self):
         self.image_num += 1
@@ -394,4 +402,3 @@ class MainWidget(QWidget):
         self.ui.text_brightness.setText(str(self.img_inform.brightness))
         self.ui.text_right_black.setText(str(self.img_inform.right_black))
         self.ui.text_left_black.setText(str(self.img_inform.left_black))
-

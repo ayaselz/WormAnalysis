@@ -6,7 +6,7 @@ import cv2
 import numpy as np
 import time
 
-from neurons import Neurons
+from neurons import Neurons, NeuronData
 from parameters import Parameters
 from image import Image, ImageInform
 
@@ -51,6 +51,7 @@ class ImageProcessingThread(QObject):
         # initialize signals for pausing and killing the loop
         self.is_paused = False
         self.is_killed = False
+        self.neuron_data = NeuronData()
 
     def loop(self, parameters, image_num, image_path, flip, start, end):
         for i in range(start, end + 1):
