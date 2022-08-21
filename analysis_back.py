@@ -9,6 +9,7 @@ import time
 from neurons import Neurons, NeuronData
 from parameters import Parameters
 from image import Image, ImageInform
+from algorithms import Assignment
 
 
 def cv_to_qpix(img):
@@ -76,25 +77,44 @@ class ImageProcessingThread(QObject):
         :return:
         """
         image = Image(image_path, image_num, parameters, flip)
-        # neurons include the assignment algorithm
-        neurons = helper(image.potential_neurons())
-        # update this-image inform with calculated neurons
-        img_inform = image.inform(neurons)
-        # add this information into save list
+        # neurons, including the assignment algorithm | 生成Neurons（包含了匹配算法）
+        # backup | neurons的备份代码:
+        # neurons = helper(image.potential_neurons())
+        neurons = Neurons(image_num,
+                          self.neuron_data.get(image_num), self.neuron_data.header,
+                          self.neuron_data.amount, image.potential_neurons())
+        if self.neuron_data.is_min_image_num(image_num):
+            neurons.assigned = neurons.to_dict()
+        else:
+            assignment = Assignment(self.neuron_data.amount, neurons,
+                                    self.neuron_data.get_neurons(image_num - 1),
+                                    self.neuron_data.get_neurons(image_num - 2))
+            neurons.assigned = assignment.results()
+        # update this-image inform with calculated neurons | 更新图片信息
+        img_inform = image.inform(neurons.assigned)
+        # add this information into save list | 将该image对应的信息加入保存列表
+        self.neuron_data.add_neurons(neurons)
         self.neuron_data.add_data(img_inform)
 
-        labelled_img = image.labelled(neurons)
+        labelled_img = image.labelled(neurons.assigned)
         q_pixmap = cv_to_qpix(labelled_img)
         self.show_img_signal_loop.emit(q_pixmap, img_inform)
 
     def image_processing(self, parameters, image_num, image_path, flip):
+        # 用于显示当前image的信息（在循环外）
         # 该方法连接了前端（作为槽函数
         image = Image(image_path, image_num, parameters, flip)
-        neurons = helper(image.potential_neurons())
-        img_inform = image.inform(neurons)
+        # backup | neurons的备份代码:
+        # neurons = helper(image.potential_neurons())
+        neurons = Neurons(image_num,
+                          self.neuron_data.get(image_num),
+                          self.neuron_data.header,
+                          self.neuron_data.amount, image.potential_neurons())
+        img_inform = image.inform(neurons.assigned)
+        self.neuron_data.add_neurons(neurons)
         self.neuron_data.add_data(img_inform)
 
-        labelled_img = image.labelled(neurons)
+        labelled_img = image.labelled(neurons.assigned)
         q_pixmap = cv_to_qpix(labelled_img)
         self.show_img_signal.emit(q_pixmap, img_inform)
 
