@@ -966,7 +966,7 @@ p, li { white-space: pre-wrap; }
     </rect>
    </property>
   </widget>
-  <widget class="QPushButton" name="button_select_file_2">
+  <widget class="QPushButton" name="button_save_data">
    <property name="geometry">
     <rect>
      <x>920</x>
@@ -1002,17 +1002,27 @@ p, li { white-space: pre-wrap; }
     <string>Open position flie</string>
    </property>
   </widget>
-  <widget class="QPushButton" name="button_select_file_3">
+  <widget class="QLabel" name="neuron_amount">
    <property name="geometry">
     <rect>
-     <x>700</x>
-     <y>10</y>
-     <width>151</width>
-     <height>41</height>
+     <x>580</x>
+     <y>460</y>
+     <width>111</width>
+     <height>16</height>
     </rect>
    </property>
    <property name="text">
-    <string>Select position file</string>
+    <string>Neuron Amount</string>
+   </property>
+  </widget>
+  <widget class="QTextBrowser" name="box_neuron_amount">
+   <property name="geometry">
+    <rect>
+     <x>580</x>
+     <y>480</y>
+     <width>101</width>
+     <height>41</height>
+    </rect>
    </property>
   </widget>
  </widget>

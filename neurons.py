@@ -4,73 +4,6 @@ from image import ImageInform
 from exceptions import OpenFileError
 
 
-# def assign(neurons: dict, neuron: list):
-#     """Put a series neuron in the Neurons dict in order"""
-#     for i in range(len(neuron)):
-#         neurons[str(i)].append(neuron[i])
-#
-#
-# def match_score(previous, current):
-#     """当只有两个neuron时，根据欧式距离得出分数"""
-#     return (previous[0] - current[0]) ** 2 + (previous[1] - current[1]) ** 2
-#
-#
-# class Neurons(object):
-#     # 神经元数量，读取csv（对应行的位置信息
-#     def __init__(self):
-#         self.neurons = {"0": [],
-#                         "1": []}
-#
-#     def get_neurons(self) -> dict:
-#         return self.neurons.copy()
-#
-#     def current_neuron(self) -> list:
-#         """The position of current neuron on the image. """
-#         # 改成multi-neuron
-#         return [self.get_neurons()["0"][-1], self.get_neurons()["1"][-1]]
-#
-#     def add_neuron(self, neuron: list):
-#         if self.neurons["0"]:
-#             # 执行匹配算法
-#             self.match(neuron)
-#         else:
-#             assign(self.neurons, neuron)
-#
-#     def match(self, neuron: list):
-#         """执行算法（先尝试简单的距离尝试）"""
-#         previous = self.current_neuron()
-#         print("previous neuron list:", previous)
-#         for i in range(len(previous)):
-#             position = previous[i]
-#             # 确保position取值不是[-1, -1]
-#             while position == [-1, -1]:
-#                 j = -2
-#                 position = self.neurons.get(str(i))[j]
-#                 j -= 1
-#             print(position)
-#             current_score = None
-#             candidate = []
-#             for item in neuron:
-#                 match = match_score(position, item)
-#                 print("the score of", item, "is", match)
-#                 if (current_score is None) or (match < current_score):
-#                     current_score = match
-#                     candidate = item
-#
-#             # neuron.删除candidate
-#             print("Neurons_match:", candidate, "is the candidate of", position)
-#             # 下面检查是否有任意candidate为空列表。
-#             # 当存在candidate为空的时候，说明读取到的亮点数少于实际神经元数。
-#             # 这种情况下，将该candidate坐标标记为[-1, -1]以示异常
-#             if not candidate:
-#                 candidate = [-1, -1]
-#             else:
-#                 # 检查没问题的情况下，再remove
-#                 neuron.remove(candidate)
-#             # matching得到的位置
-#             self.neurons[str(i)].append(candidate)
-
-
 class Neurons(object):
     # 要导入csv对应的position信息（如果为空，则只分析图片）
     # 对应image的序号
@@ -80,25 +13,25 @@ class Neurons(object):
     def __init__(self, image_num: int,
                  position_data: list, position_header: list,
                  amount: int, potential: list) -> None:
-        self.__image_num = image_num  # start from 0
-        self.position = position_data if position_data else [0, 0, 0,
-                                                             0]  # 如果为空怎么处理，格式不对怎么办
+        self.image_num = image_num  # may not start from 0
+        self.position = position_data if position_data else [0, 0, 0, 0]  # 如果为空怎么处理，格式不对怎么办
         self.header = position_header if position_header else 1
         self.__amount = amount
-        self.potential = potential  # 不应该要potential，应该直接给结果；potential留给assign时接收
-        self.__assigned = {}  # 重要：假设assigned之后都是储存的物理信息
 
-    def physical_positions(self, neurons: list) -> list:
+        self.__potential: list = potential  # 不应该要potential，应该直接给结果；potential留给assign时接收
+        self.__assigned: dict = {}  # 重要：假设assigned之后都是储存的物理信息
+
+    def physical_positions(self) -> list:
         # influenced by original pixel size, the size of image (1200x1200),
         # and transferred image (512x512)
         # 没有stage这些信息怎么处理？
         result = []
-        trans_ratio = self.header * (1200 / 512)
+        trans_ratio = self.header if self.header == 1 else self.header[2]
         stage_x = self.position[0]
         stage_y = self.position[1]
         # notice: for stage, x is left-right, y is front-behind;
         # but for image coordinate, vice versa
-        for neuron in neurons:
+        for neuron in self.potential:
             neuron_x = neuron[0]
             neuron_y = neuron[1]
             pp = [stage_x - (neuron_y - 512 / 4 * 3) * trans_ratio,
@@ -107,13 +40,29 @@ class Neurons(object):
         return result
 
     def to_dict(self) -> dict:
+        """仅为第一张图片使用"""
         # 待修正： 后期考虑结合amount修正neurons
         result = {}
         i = 0
         for item in self.__potential:
             result[str(i)] = item
             i += 1
+        # 更新信息
+        self.__amount = len(result)
+        self.assigned = result
         return result
+
+    @property
+    def potential(self) -> list:
+        # if physical inform is given, return actual coordinates
+        # otherwise picture position only
+        if self.position == [0, 0, 0, 0] and self.header == 1:
+            return self.__potential.copy()
+        return self.physical_positions()
+
+    @potential.setter
+    def potential(self, potential: list) -> None:
+        self.__potential = potential
 
     @property
     def assigned(self) -> dict:
@@ -123,19 +72,11 @@ class Neurons(object):
         :return: a copy of the assigned neurons
         """
         # 差个逻辑： 开始时没有neuron怎么办
-        return self.__assigned.copy()
+        return self.__assigned
 
     @assigned.setter
     def assigned(self, assigned: dict) -> None:
         self.__assigned = assigned
-
-    @property
-    def image_num(self) -> int:
-        return self.__image_num
-
-    @image_num.setter
-    def image_num(self, image_num: int) -> None:
-        self.__image_num = image_num
 
 
 class NeuronData(object):
@@ -147,15 +88,20 @@ class NeuronData(object):
     def __init__(self) -> None:
         self.__position_path = ""
         # header: (追踪中心x，追踪中心y，pixel to len转换比例)
-        self.__position_header = []
+        self.position_header = []
         self.__positions = []
         self.__saves = []
-        self.__neurons_save = []
+        self.__neurons_save: list[Neurons] = []
         # the amount of tracked neurons
         self.__amount = 1
 
     @property
     def position_path(self) -> str:
+        """
+        the path of position file (.csv)
+
+        :return:
+        """
         return self.__position_path
 
     @position_path.setter
@@ -167,26 +113,23 @@ class NeuronData(object):
         # 准备将csv位置信息内容写入实例
         with open(position_path) as file:
             reader = list(csv.reader(file))
-            self.__position_header = reader[0]
-            # 如果position文件的格式改变，需要更改这里的数字1
-            self.__positions = reader[1:]
-
-    @property
-    def header(self) -> list:
-        return self.__position_header.copy()
-
-    @header.setter
-    def header(self, header: list) -> None:
-        self.__position_header = header
+            try:
+                self.position_header = reader[0]
+                # 如果position文件的格式改变，需要更改这里的数字1
+                self.__positions = reader[1:]
+            except:
+                print(f"Wrong format of csv file or empty csv file.")
+                self.position_header = []
+                # 如果position文件的格式改变，需要更改这里的数字1
+                self.__positions = []
 
     def get(self, image_num: int) -> list:
-        # 待修正：比例转换之后再return，先需要知道stage返回的单位
-        # 待补充：检测position格式是否有误再返回
-        # position = self.__positions[image_num]
-        # trans_ratio = self.header[2]
-        # return [position[0], position[1],
-        #         position[2] * trans_ratio, position[3] * trans_ratio]
-        return self.__positions[image_num]
+        try:
+            return self.__positions[image_num]
+        except:
+            print(f"This image does not have caught physical "
+                  f"position data. Image number: {image_num}")
+            return []
 
     @property
     def saves(self) -> list:
@@ -242,9 +185,18 @@ class NeuronData(object):
     def neurons_save(self, neurons_save: list) -> None:
         self.__neurons_save = neurons_save
 
-    def add_neurons(self, neurons: Neurons) -> None:
+    def add_neurons(self, neurons: Neurons, insert_position: int = None) -> None:
+        # check duplicate
+        for item in self.__neurons_save:
+            if item.image_num == neurons.image_num:
+                index = self.__neurons_save.index(item)
+                self.__neurons_save[index] = neurons
+                return
         # 待补充：如果保证没有重复neurons数据
-        self.__neurons_save.append(neurons)
+        if insert_position is None:
+            self.__neurons_save.append(neurons)
+        else:
+            self.__neurons_save.insert(insert_position, neurons)
 
     @property
     def amount(self) -> int:
@@ -259,6 +211,22 @@ class NeuronData(object):
             return True
         for neurons in self.__neurons_save:
             if neurons.image_num < given_num:
+                return False
+        return True
+
+    def is_second_min_image_num(self, given_num) -> bool:
+        if not self.__neurons_save:
+            return False
+        # find the min
+        min_num = 10000
+        for neurons in self.__neurons_save:
+            if neurons.image_num < min_num:
+                min_num = neurons.image_num
+        # whether the second min
+        if given_num <= min_num:
+            return False
+        for neurons in self.__neurons_save:
+            if neurons.image_num != min_num and neurons.image_num < given_num:
                 return False
         return True
 

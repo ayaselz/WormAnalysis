@@ -4,7 +4,13 @@ from neurons import Neurons
 
 
 def distance(coord1, coord2):
-    """ Calculate the distance betwwen two 2-D coordinates"""
+    """
+    Calculate the distance between two 2-D coordinates
+
+    :param coord1: Numpy array (ndarray)
+    :param coord2: Numpy array (ndarray)
+    :return:
+    """
     return np.sqrt(np.sum((coord1 - coord2) ** 2))
 
 
@@ -44,10 +50,12 @@ def quality_score(group1: list, group2: list):
 
 
 def coordinate(position: list):
-    return np.array(position[0], position[1])
+    return np.array([position[0], position[1]])
 
 
-def position_to_array(neurons: Neurons) -> dict:
+def position_to_array(neurons: Neurons | int) -> dict | int:
+    if neurons == -1:
+        return -1
     if not neurons.assigned:
         return {}
     result = {}
@@ -74,18 +82,22 @@ class Assignment(object):
         # previous neurons are in (n-1)th image, current neurons are in
         # (n)th image, candidates are in (n+1)th image
         self.amount = amount
-        trans_ratio = candidates.header * (1200 / 512)
-        self.window_radius: float = 6 * trans_ratio
+        self.unit = candidates.header
+        self.window_radius: float = 6 * self.unit
 
     def predicted_position(self) -> dict:
+        # 当没有previous时，入第二张图
+        if self.previous == -1:
+            return self.currents
         predicted_position = {}
         for i in range(self.amount):
             key = str(i)
             predicted_position[key] = self.currents[key] + \
                                       (self.currents[key] - self.previous[key])
+
         return predicted_position
 
-    def classify_candidates(self) -> dict[str, list]:
+    def classify_candidates(self, radius: float = 0) -> dict[str, list]:
         results = {}
         predicted = self.predicted_position()
         for key in predicted:
@@ -95,6 +107,10 @@ class Assignment(object):
                 if change[0] < self.window_radius \
                         and change[1] < self.window_radius:
                     results[key].append(item)
+        # check and modify if under one key the item is empty
+        for key in results:
+            if not results[key]:
+                results = self.classify_candidates(self.window_radius + self.unit)
         return results
 
     def compare(self):
@@ -129,6 +145,11 @@ class Assignment(object):
         """储存的position都是物理信息！！！"""
         # 待补充：如果神经元数量小于3怎么处理？
         # 待修正：重叠部分怎么修正？肯定不能直接覆盖
+        if self.amount == 1:
+            return self.result_for_1()
+        if self.amount == 2:
+            return self.result_for_2()
+
         result = {}
         for i in range(1, self.amount - 1):
             # 从ndarray转化成普通list
@@ -137,3 +158,57 @@ class Assignment(object):
             result[str(i)] = [assign[1][0], assign[1][1]]
             result[str(i + 1)] = [assign[2][0], assign[2][1]]
         return result
+
+    def result_for_1(self) -> dict:
+        result = {}
+        for key in self.currents:
+            current_neuron = np.array(self.currents[key])
+            candidate = []
+            dist = 100000
+            for item in self.candidates:
+                current_dist = distance(current_neuron, np.array(item))
+                if current_dist < dist:
+                    dist = current_dist
+                    candidate = item
+            result[key] = candidate
+        return result
+
+    def result_for_2(self) -> dict:
+        result = {}
+        score = None
+        length = len(self.candidates)
+        if length == 0:
+            return result
+        if length == 1:
+            dist = 100000
+            result_key = ''
+            for key in self.currents:
+                if distance(np.array(self.currents[key]),
+                            np.array(self.candidates[0])) < dist:
+                    result_key = key
+            result[result_key] = self.candidates[0]
+            return result
+
+        for j in range(length):
+            for i in range(length):
+                if i == j:
+                    continue
+                group = {}
+                picked_positions = [self.candidates[i], self.candidates[j]]
+                keys = list(self.currents.keys())
+                for order in range(len(keys)):
+                    group[keys[order]] = picked_positions[order]
+                if (score is None) or (self.group_score(group) > score):
+                    result = group
+                    score = self.group_score(group)
+        return result
+
+    def group_score(self, group: dict):
+        distances = []
+        for key in self.currents:
+            distances.append(distance(np.array(self.currents[key]),
+                                      np.array(group[key])))
+        distances = np.array(distances)
+        score = - np.average(distances) - np.sqrt(np.var(distances))
+        return score
+

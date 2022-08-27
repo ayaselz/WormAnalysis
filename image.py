@@ -15,13 +15,13 @@ def open_image(path: str, num: int, flip: bool):
     if path is None or path == "":
         raise OpenImageError(f"Image path is empty. Image number: {num}")
 
-    image_file = os.path.join(path, f'{num:04}' + '.tif')
-    image_16bit, image_8bit = transfer_16bit_to_8bit(image_file)
+    # image_file = os.path.join(path, f'{num:04}' + '.tif')
+    image_16bit, image_8bit = transfer_16bit_to_8bit(path)
     # try again to get the image data by using another path formation
-    # 再次尝试获取图片的信息（用另一种可能的路径格式）
-    if image_16bit is None:
-        image_file = os.path.join(path, f'{num}' + '.tif')
-        image_16bit, image_8bit = transfer_16bit_to_8bit(image_file)
+    # 再次尝试获取图片的信息（用另一种可能的路径格式） | 直接导入path应该就没这个问题
+    # if image_16bit is None:
+    #     image_file = os.path.join(path, f'{num}' + '.tif')
+    #     image_16bit, image_8bit = transfer_16bit_to_8bit(image_file)
 
     if image_16bit is None:
         raise OpenImageError(f"Image content is empty. Image number: {num}")
@@ -116,11 +116,11 @@ class ImageInform(object):
     Restore image information for each flame.
     """
 
-    def __init__(self, num: int,
-                 right_row: int, right_column: int,
-                 right_brightness, right_black,
-                 left_row: int, left_column: int,
-                 left_brightness, left_black):
+    def __init__(self, num: int = None,
+                 right_row: int = None, right_column: int = None,
+                 right_brightness = None, right_black = None,
+                 left_row: int = None, left_column: int = None,
+                 left_brightness = None, left_black = None):
         self.__num = num
         self.__right_row = right_row
         self.__right_column = right_column
@@ -246,10 +246,8 @@ def right_array(image, row: int, column: int, radius: int, ratio: float, black):
                         row - radius: row + radius + 1,
                         column - radius: column + radius + 1]
     right_light_array -= black
-
     right_light_array = np.where(right_light_array < 0, 0, right_light_array)
     right_light_array_max = np.max(right_light_array)
-
     right_light_array = np.where(
         right_light_array > (right_light_array_max * ratio), right_light_array,
         0)
@@ -302,6 +300,7 @@ class Image(object):
                 if surrender(self.bit8, row, column,
                              self.parameters.peak_circle):
                     potential_neurons.append([row, column])
+        print("在image的potential_neurons，用的老方法，不应该为空啊", potential_neurons)
         return potential_neurons
 
     def labelled(self, neurons: dict):
@@ -325,12 +324,17 @@ class Image(object):
         return labelled_image
 
     def inform(self, neurons: dict) -> ImageInform:
+        print("inform中: ")
         # inform on the right half
         max_brightness = 0
         max_row = 0
         max_column = 0
+        print("neurons: ", neurons)
+        if neurons == {}:
+            return ImageInform()
         for key in neurons:
             centre = neurons.get(key)
+            print("找到centree: ", self.bit8[centre[0]][centre[1]])
             if self.bit8[centre[0]][centre[1]] > max_brightness:
                 max_brightness = self.bit8[centre[0]][centre[1]]
                 max_row = centre[0]
@@ -342,7 +346,6 @@ class Image(object):
                                         self.parameters.right_ratio,
                                         right_black)
         right_brightness = mean_in_array(right_light_array)
-
         # inform on the left half
         left_row, left_column \
             = find_left_centre(max_row, max_column,
@@ -354,7 +357,6 @@ class Image(object):
                                       right_light_array,
                                       self.parameters.right_circle, left_black)
         left_brightness = mean_in_array(left_light_array)
-
         # generate image inform
         inform = ImageInform(self.num,
                              max_row, max_column,

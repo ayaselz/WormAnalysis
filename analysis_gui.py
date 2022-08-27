@@ -104,9 +104,7 @@ class MainWidget(QWidget):
 
         # 部件处理
         self.ui.button_select_file.clicked.connect(self.button_select_file)
-        self.ui.button_select_file_2.clicked.connect(self.button_save_data)
-        self.ui.button_select_file_3.clicked.connect(
-            self.button_select_position_file)
+        self.ui.button_save_data.clicked.connect(self.button_save_data)
         self.ui.button_position.clicked.connect(self.open_position_file)
 
         self.ui.button_next.clicked.connect(self.button_next)
@@ -132,6 +130,7 @@ class MainWidget(QWidget):
             columns=['Right_row', 'Right_column', 'Right_brightness',
                      'Left_row', 'Left_column', 'Left_brightness',
                      'Brightness'])
+        self.ui.box_neuron_amount.textChanged.connect(self.set_neuron_amount)
 
     def closeEvent(self, event):
         reply = QtWidgets.QMessageBox.question(self,
@@ -156,9 +155,7 @@ class MainWidget(QWidget):
         image_path_name, _ = QFileDialog.getOpenFileName(self, 'Select image',
                                                          '',
                                                          'Image files(*.tif)')
-
         self.image_path, self.image_name = os.path.split(image_path_name)
-
         self.ui.text_file_path.setText(self.image_path)
 
         regex = re.compile(r'\d+')
@@ -167,27 +164,56 @@ class MainWidget(QWidget):
         self.set_parameter()
         self.i_thread.start_image_process_thread_signal.emit(
             self.parameters,
-            self.image_num, self.image_path, self.flip)
+            self.image_num, image_path_name, self.flip)
 
-    def button_select_position_file(self):
-        position_file_name, _ = QFileDialog.getOpenFileName(self, 'Select file',
-                                                            '',
-                                                            'files(*.csv)')
-        self.i_thread.neuron_data.position_path = position_file_name
+        # automatically select the csv path
+        for root, dirs, files in os.walk(self.image_path):
+            csv_files = []
+            for file in files:
+                if file.endswith(".csv"):
+                    csv_files.append()
+            if not csv_files:
+                QMessageBox.warning(
+                    self.ui,
+                    'CSV File Not Exist',
+                    'There is no CSV data for the selected image. ' +
+                    'Analysis might be executed without physical positions.')
+            if len(csv_files) > 1:
+                QMessageBox.warning(
+                    self.ui,
+                    'Multiple CSV Files',
+                    'There are multiple CSV files. ' +
+                    'Not possible to analyze with inaccurate data.')
+            if len(csv_files) == 1:
+                csv_path = os.path.join(self.image_path, csv_files[0])
+                self.i_thread.neuron_data.position_path = csv_path
+
+    # def button_select_position_file(self):
+    #     position_file_name, _ = QFileDialog.getOpenFileName(self, 'Select file',
+    #                                                         '',
+    #                                                         'CSV Files(*.csv)')
+    #     self.i_thread.neuron_data.position_path = position_file_name
 
     def button_next(self):
         self.image_num += 1
+        path = os.path.join(self.image_path, str(self.image_num) + ".tif")
+        if not os.path.exists(path):
+            path = os.path.join(self.image_path, f'{self.image_num:04}' + '.tif')
         self.set_parameter()
         self.i_thread.start_image_process_thread_signal.emit(
             self.parameters,
-            self.image_num, self.image_path, self.flip)
+            self.image_num, path, self.flip)
 
     def button_last(self):
         self.image_num -= 1
+        path = os.path.join(self.image_path, str(self.image_num) + ".tif")
+        if not os.path.exists(path):
+            path = os.path.join(self.image_path,
+                                f'{self.image_num:04}' + '.tif')
         self.set_parameter()
         self.i_thread.start_image_process_thread_signal.emit(
             self.parameters,
-            self.image_num, self.image_path, self.flip)
+            self.image_num, path, self.flip)
 
     def button_kill(self):
         self.i_thread.is_killed = True
@@ -203,10 +229,14 @@ class MainWidget(QWidget):
 
     def button_go(self):
         self.image_num = int(self.ui.textEdit_num.toPlainText())
+        path = os.path.join(self.image_path, str(self.image_num) + ".tif")
+        if not os.path.exists(path):
+            path = os.path.join(self.image_path,
+                                f'{self.image_num:04}' + '.tif')
         self.set_parameter()
         self.i_thread.start_image_process_thread_signal.emit(
             self.parameters,
-            self.image_num, self.image_path, self.flip)
+            self.image_num, path, self.flip)
 
     def button_run(self):
         self.results = []
@@ -221,11 +251,15 @@ class MainWidget(QWidget):
         self.left_brightness = []
         self.brightness = []
 
+        path = os.path.join(self.image_path, str(self.image_num) + ".tif")
+        if not os.path.exists(path):
+            path = os.path.join(self.image_path,
+                                f'{self.image_num:04}' + '.tif')
         # for i in range(start, end + 1):
         # if self.stop:
         #     break
         self.i_thread.loop_signal.emit(self.parameters,
-                                       self.image_num, self.image_path,
+                                       self.image_num, path,
                                        self.flip, start, end)
         self.image_num += 1
 
@@ -234,16 +268,26 @@ class MainWidget(QWidget):
         self.parameters.row_bias += bias_row
         self.parameters.column_bias += bias_column
         self.initialization_parameter()
+
+        path = os.path.join(self.image_path, str(self.image_num) + ".tif")
+        if not os.path.exists(path):
+            path = os.path.join(self.image_path,
+                                f'{self.image_num:04}' + '.tif')
         self.i_thread.start_image_process_thread_signal.emit(
             self.parameters,
-            self.image_num, self.image_path, self.flip)
+            self.image_num, path, self.flip)
 
     def checkbox_mirror_symmetry(self):
         self.flip = not self.flip
         self.set_parameter()
+
+        path = os.path.join(self.image_path, str(self.image_num) + ".tif")
+        if not os.path.exists(path):
+            path = os.path.join(self.image_path,
+                                f'{self.image_num:04}' + '.tif')
         self.i_thread.start_image_process_thread_signal.emit(
             self.parameters,
-            self.image_num, self.image_path, self.flip)
+            self.image_num, path, self.flip)
 
     def initialization_parameter(self):
         self.ui.textEdit_alpha.setText(str(self.parameters.alpha))
@@ -302,6 +346,7 @@ class MainWidget(QWidget):
         # 用于刷新image information
         self.img_inform = img_inform
         self.set_result()
+        self.ui.box_neuron_amount.setText(str(self.i_thread.neuron_data.amount))
         self.results.append(img_inform)
         self.draw_brightness(img_inform)
         self.draw_position(img_inform)
@@ -403,3 +448,8 @@ class MainWidget(QWidget):
         self.ui.text_brightness.setText(str(self.img_inform.brightness))
         self.ui.text_right_black.setText(str(self.img_inform.right_black))
         self.ui.text_left_black.setText(str(self.img_inform.left_black))
+
+    def set_neuron_amount(self):
+        string = self.ui.box_neuron_amount.toPlainText()
+        if string.isdigit():
+            self.i_thread.neuron_data.amount = int(string)
