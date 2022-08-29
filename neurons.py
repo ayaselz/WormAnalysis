@@ -59,7 +59,7 @@ class Neurons(object):
         # if physical inform is given, return actual coordinates
         # otherwise picture position only
         if self.position == [0, 0, 0, 0] and self.header == 1:
-            return self.__potential.copy()
+            return self.__potential
         return self.physical_positions()
 
     @potential.setter
@@ -71,7 +71,7 @@ class Neurons(object):
         """
         return the assigned and ordered neurons of the (image_num)th image
 
-        :return: a copy of the assigned neurons
+        :return: the assigned neurons
         """
         # 完备性
         if len(self.__assigned) < self.__amount:
@@ -98,7 +98,7 @@ class NeuronData(object):
         self.position_header = []
         self.__positions = []
         self.__saves: dict[int, ImageInform] = {}
-        self.__neurons_save: dict[int, Neurons] = {}
+        self.neurons_save: dict[int, Neurons] = {}
         # the amount of tracked neurons
         self.__amount = 1
 
@@ -185,7 +185,7 @@ class NeuronData(object):
                     each.left_brightness,
                     each.brightness]
             # neuron position and brightness
-            neurons = self.__neurons_save[key]
+            neurons = self.neurons_save[key]
             image = images[key]
             for tag in neurons.assigned:
                 position = neurons.assigned[tag]
@@ -203,16 +203,16 @@ class NeuronData(object):
                 csv_writer = csv.writer(file)
                 csv_writer.writerow(data)
 
-    @property
-    def neurons_save(self) -> dict[int, Neurons]:
-        return self.__neurons_save
-
-    @neurons_save.setter
-    def neurons_save(self, neurons_save: dict) -> None:
-        self.__neurons_save = neurons_save
+    # @property
+    # def neurons_save(self) -> dict[int, Neurons]:
+    #     return self.neurons_save
+    #
+    # @neurons_save.setter
+    # def neurons_save(self, neurons_save: dict) -> None:
+    #     self.neurons_save = neurons_save
 
     def add_neurons(self, image_num: int, neurons: Neurons) -> None:
-        self.__neurons_save[image_num] = neurons
+        self.neurons_save[image_num] = neurons
 
     @property
     def amount(self) -> int:
@@ -223,8 +223,14 @@ class NeuronData(object):
         self.__amount = amount
 
     def get_neurons(self, given_num: int) -> Neurons | int:
-        if given_num in self.__neurons_save.keys():
-            return self.__neurons_save[given_num]
+        """
+        Return Neurons type with the given tag.
+
+        :param given_num:
+        :return:
+        """
+        if given_num in self.neurons_save.keys():
+            return self.neurons_save[given_num]
         return -1
 
     def is_min_image_num(self, image_num: int) -> bool:
@@ -240,3 +246,4 @@ class NeuronData(object):
         # swap
         neuron.assigned[neuron_num1] = position2
         neuron.assigned[neuron_num2] = position1
+        self.neurons_save[image_num] = neuron

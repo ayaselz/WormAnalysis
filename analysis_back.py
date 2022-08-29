@@ -7,6 +7,7 @@ from PySide2.QtCore import *
 import cv2
 import numpy as np
 import time
+import warnings
 
 from neurons import Neurons, NeuronData
 from parameters import Parameters
@@ -131,3 +132,21 @@ class ImageProcessingThread(QObject):
 
         self.image_processing_loop(parameters, image_num, image_path, flip)
 
+    def swap_neuron_position(self, image_num: int, tag1: str, tag2: str):
+        if self.is_paused:
+            # swap the data (swap the existing image)
+            print("before swap: ", self.neuron_data.get_neurons(image_num).assigned)
+            self.neuron_data.swap(image_num, tag1, tag2)
+            self.assignment.add_neurons(image_num, self.neuron_data.get_neurons(image_num).assigned)
+            print("Swap: success!")
+            # reload the image with swapped data
+            image = self.images[image_num]
+            neurons = self.neuron_data.get_neurons(image_num)
+            print("after swap: ", self.neuron_data.get_neurons(image_num).assigned)
+            labelled_img = image.labelled(neurons.assigned)
+            img_inform = self.images[image_num].inform(neurons.assigned)
+            q_pixmap = cv_to_qpix(labelled_img)
+            self.show_img_signal_loop.emit(q_pixmap, img_inform)
+
+        else:
+            warnings.warn("Please swap during pause.")

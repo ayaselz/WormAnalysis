@@ -78,7 +78,7 @@ class MainWidget(QWidget):
         # 在GUI界面显示参数值
         self.initialization_parameter()
 
-        self.img_inform = None  # it should be ImageInform class
+        self.img_inform: ImageInform = None  # it should be ImageInform class
         self.results = []
 
         self.image_nums = []
@@ -131,6 +131,9 @@ class MainWidget(QWidget):
                      'Left_row', 'Left_column', 'Left_brightness',
                      'Brightness'])
         self.ui.box_neuron_amount.textChanged.connect(self.set_neuron_amount)
+
+        # widgets: swap neuron positions
+        self.ui.button_swap.clicked.connect(self.swap)
 
     def closeEvent(self, event):
         reply = QtWidgets.QMessageBox.question(self,
@@ -335,7 +338,7 @@ class MainWidget(QWidget):
         self.parameters.left_black_bias \
             = int(self.ui.textEdit_left_black_bias.toPlainText())
 
-    def show_image(self, q_pixmap, img_inform):
+    def show_image(self, q_pixmap, img_inform: ImageInform):
         # 用于显示图片
         self.ui.label_image.setPixmap(q_pixmap)
         # 用于刷新image information
@@ -346,7 +349,7 @@ class MainWidget(QWidget):
         self.draw_brightness(img_inform)
         self.draw_position(img_inform)
 
-    def show_image_loop(self, q_pixmap, img_inform):
+    def show_image_loop(self, q_pixmap, img_inform: ImageInform):
         self.ui.label_image.setPixmap(q_pixmap)
         self.img_inform = img_inform
         self.set_result()
@@ -449,3 +452,18 @@ class MainWidget(QWidget):
         if string.isdigit():
             self.i_thread.neuron_data.amount = int(string)
             self.i_thread.assignment.amount = int(string)
+
+    def swap(self):
+        tag1 = self.ui.textEdit_neuron_tag_1.toPlainText()
+        tag2 = self.ui.textEdit_neuron_tag_2.toPlainText()
+        image_num = self.ui.textEdit_num.toPlainText()
+        if tag1.isdigit() and tag2.isdigit() and image_num.isdigit():
+            self.i_thread.swap_neuron_position(int(image_num), str(tag1), str(tag2))
+        else:
+            QMessageBox.warning(
+                self.ui,
+                'Swap Neuron\' Position',
+                'Some of these are not integer: \n' +
+                'Neuron Tag 1: ' + str(tag1.isdigit()) + ';\n'
+                'Neuron Tag 2: ' + str(tag2.isdigit()) + ';\n'
+                'Image Number: ' + str(tag1.isdigit()) + '.')
