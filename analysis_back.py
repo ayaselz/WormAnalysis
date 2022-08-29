@@ -56,6 +56,7 @@ class ImageProcessingThread(QObject):
         self.is_killed = False
         self.neuron_data = NeuronData()
         self.assignment = Assignment()
+        self.images: dict[int, Image] = {}
 
     def loop(self, parameters, image_num, image_path, flip, start, end):
         for i in range(start, end + 1):

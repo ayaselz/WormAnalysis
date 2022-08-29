@@ -1,6 +1,6 @@
 import csv
 
-from image import ImageInform
+from image import ImageInform, Image
 from exceptions import OpenFileError
 
 
@@ -97,7 +97,7 @@ class NeuronData(object):
         # header: (追踪中心x，追踪中心y，pixel to len转换比例)
         self.position_header = []
         self.__positions = []
-        self.__saves: dict[int, Neurons] = {}
+        self.__saves: dict[int, ImageInform] = {}
         self.__neurons_save: dict[int, Neurons] = {}
         # the amount of tracked neurons
         self.__amount = 1
@@ -139,11 +139,11 @@ class NeuronData(object):
             return []
 
     @property
-    def saves(self) -> list:
+    def saves(self) -> dict[int, ImageInform]:
         return self.__saves.copy()
 
     @saves.setter
-    def saves(self, saves: list) -> None:
+    def saves(self, saves: dict) -> None:
         self.__saves = saves
 
     def add_data(self, img_inform: ImageInform) -> None:
@@ -162,25 +162,48 @@ class NeuronData(object):
             else:
                 self.__saves.append(img_inform)
 
-    def save_data(self, save_path: str = '') -> None:
+    def save_data(self, images: dict[int, Image], save_path: str = '') -> None:
         # 待补充：尚未链接信号与槽函数（预计在ui的save data里面
         # 注意：现在只是正常运行程序，这个方法对应的结果还未测试
         if save_path == '':
             raise OpenFileError("Sava data path is empty")
+        # write headers
         with open(save_path, 'w', encoding="utf-8", newline="") as file:
             csv_writer = csv.writer(file)
             results_head = ['image_num',
                             'Right_row', 'Right_column', 'Right_brightness',
                             'Left_row', 'Left_column', 'Left_brightness',
                             'Brightness']
+            for i in range(self.amount):
+                results_head.append('Neuron_' + str(i) + '_row')
+                results_head.append('Neuron_' + str(i) + '_column')
+                results_head.append('Neuron_' + str(i) + '_brightness')
             csv_writer.writerow(results_head)
-            for each in self.saves:
-                data = [each.num,
-                        each.right_row, each.right_column,
-                        each.right_brightness,
-                        each.left_row, each.left_column,
-                        each.left_brightness,
-                        each.brightness]
+        # write in each line
+        for key in self.saves:
+            each = self.saves[key]
+            data = [each.num,
+                    each.right_row, each.right_column,
+                    each.right_brightness,
+                    each.left_row, each.left_column,
+                    each.left_brightness,
+                    each.brightness]
+            # neuron position and brightness
+            neurons = self.__neurons_save[key]
+            image = images[key]
+            for tag in neurons.assigned:
+                position = neurons.assigned[tag]
+                if position not in neurons.potential:
+                    position = neurons.physical_map_image[position]
+                row = position[0]
+                column = position[1]
+                brightness = image.bit16[row][column]
+                data.append(row)
+                data.append(column)
+                data.append(brightness)
+
+            # open file and write in
+            with open(save_path, 'w', encoding="utf-8", newline="") as file:
                 csv_writer = csv.writer(file)
                 csv_writer.writerow(data)
 
