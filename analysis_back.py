@@ -60,11 +60,8 @@ class ImageProcessingThread(QObject):
 
     def loop(self, parameters, image_num, image_path, flip, start, end):
         for i in range(start, end + 1):
-            print("进入时的image num：", image_num)
-            print(image_path)
             self.image_processing_loop(parameters, image_num, image_path, flip)
             image_num += 1
-            print("image processing之后再加一的image num：", image_num)
             image_path, _ = os.path.split(image_path)
             path = os.path.join(image_path, str(image_num) + ".tif")
             if not os.path.exists(path):
@@ -92,36 +89,32 @@ class ImageProcessingThread(QObject):
         :return:
         """
         image = Image(image_path, image_num, parameters, flip)
+        self.images[image_num] = image
         # neurons, including the assignment algorithm | 生成Neurons（包含了匹配算法）
         # backup | neurons的备份代码:
         # neurons = helper(image.potential_neurons())
+        if self.neuron_data.is_min_image_num(image_num):
+            amount = len(image.potential_neurons())
+            self.neuron_data.amount = amount
+            self.assignment.amount = amount
         neurons = Neurons(image_num,
                           self.neuron_data.get(image_num),
                           self.neuron_data.position_header,
-                          self.neuron_data.amount, image.potential_neurons())
+                          self.neuron_data.amount,
+                          image.potential_neurons())
         if self.neuron_data.is_min_image_num(image_num):
             neurons.assigned = neurons.to_dict()
-            self.neuron_data.amount = len(neurons.assigned)
-            self.neuron_data.add_neurons(neurons, 0)
-        elif self.neuron_data.is_second_min_image_num(image_num):
-            assignment = Assignment(self.neuron_data.amount, neurons,
-                                    self.neuron_data.get_neurons(image_num - 1),
-                                    -1)
-
-            neurons.assigned = assignment.results()
-            self.neuron_data.add_neurons(neurons, 1)
+            self.assignment.add_neurons(image_num, neurons.assigned)
         else:
-            assignment = Assignment(self.neuron_data.amount, neurons,
-                                    self.neuron_data.get_neurons(image_num - 1),
-                                    self.neuron_data.get_neurons(image_num - 2))
-            neurons.assigned = assignment.results()
-            self.neuron_data.add_neurons(neurons)
+            self.assignment.assign(image_num, neurons.potential)
+            neurons.assigned = self.assignment.get_neurons(image_num)
 
         # update this-image inform with calculated neurons | 更新图片信息
+
         img_inform = image.inform(neurons.assigned)
         # add this information into save list | 将该image对应的信息加入保存列表
-        self.neuron_data.add_neurons(neurons)
-        self.neuron_data.add_data(img_inform)
+        self.neuron_data.add_neurons(image_num, neurons)
+        self.neuron_data.add_data(image_num, img_inform)
 
         labelled_img = image.labelled(neurons.assigned)
         q_pixmap = cv_to_qpix(labelled_img)
@@ -133,38 +126,8 @@ class ImageProcessingThread(QObject):
         # 该方法连接了前端（作为槽函数
         # 初始化neuron data
         self.neuron_data = NeuronData()
+        self.assignment = Assignment()
+        self.images = {}
 
-        image = Image(image_path, image_num, parameters, flip)
-        # neurons, including the assignment algorithm | 生成Neurons（包含了匹配算法）
-        # backup | neurons的备份代码:
-        # neurons = helper(image.potential_neurons())
-        neurons = Neurons(image_num,
-                          self.neuron_data.get(image_num),
-                          self.neuron_data.position_header,
-                          self.neuron_data.amount, image.potential_neurons())
-        if self.neuron_data.is_min_image_num(image_num):
-            neurons.assigned = neurons.to_dict()
-            self.neuron_data.amount = len(neurons.assigned)
-            self.neuron_data.add_neurons(neurons, 0)
-        elif self.neuron_data.is_second_min_image_num(image_num):
-            assignment = Assignment(self.neuron_data.amount, neurons,
-                                    self.neuron_data.get_neurons(image_num - 1),
-                                    -1)
-            neurons.assigned = assignment.results()
-            self.neuron_data.add_neurons(neurons, 1)
-        else:
-            assignment = Assignment(self.neuron_data.amount, neurons,
-                                    self.neuron_data.get_neurons(image_num - 1),
-                                    self.neuron_data.get_neurons(image_num - 2))
-            neurons.assigned = assignment.results()
-            self.neuron_data.add_neurons(neurons)
-        # update this-image inform with calculated neurons | 更新图片信息
-        img_inform = image.inform(neurons.assigned)
-        # add this information into save list | 将该image对应的信息加入保存列表
-        self.neuron_data.add_neurons(neurons)
-        self.neuron_data.add_data(img_inform)
-
-        labelled_img = image.labelled(neurons.assigned)
-        q_pixmap = cv_to_qpix(labelled_img)
-        self.show_img_signal.emit(q_pixmap, img_inform)
+        self.image_processing_loop(parameters, image_num, image_path, flip)
 

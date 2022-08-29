@@ -18,7 +18,7 @@ class Neurons(object):
         self.header = position_header if position_header else 1
         self.__amount = amount
 
-        self.__potential: list = []  # 不应该要potential，应该直接给结果；potential留给assign时接收
+        self.__potential: list = potential  # 不应该要potential，应该直接给结果；potential留给assign时接收
         self.physical_map_image = {}  # a map to find image position by physical position
         self.__assigned: dict = {}  # 重要：假设assigned之后都是储存的物理信息
 
@@ -140,27 +140,23 @@ class NeuronData(object):
 
     @property
     def saves(self) -> dict[int, ImageInform]:
-        return self.__saves.copy()
+        return self.__saves
 
     @saves.setter
     def saves(self, saves: dict) -> None:
         self.__saves = saves
 
-    def add_data(self, img_inform: ImageInform) -> None:
+    def add_data(self, image_num: int, img_inform: ImageInform) -> None:
         # 待补充：目前data采用key为0的neuron的数据
         """
         Add the given image information into saves for future save or
         modification. If this information has been stored (check by image
         number), replace the previous one. Otherwise, append the list.
 
+        :param image_num:
         :param img_inform: the given image information
         """
-        for data in self.__saves:
-            if img_inform.num == data.num:
-                index = self.__saves.index(data)
-                self.__saves[index] = img_inform
-            else:
-                self.__saves.append(img_inform)
+        self.saves[image_num] = img_inform
 
     def save_data(self, images: dict[int, Image], save_path: str = '') -> None:
         # 待补充：尚未链接信号与槽函数（预计在ui的save data里面
@@ -226,10 +222,16 @@ class NeuronData(object):
     def amount(self, amount: int) -> None:
         self.__amount = amount
 
-    def get_neurons(self, given_num: int) -> Neurons | None:
+    def get_neurons(self, given_num: int) -> Neurons | int:
         if given_num in self.__neurons_save.keys():
             return self.__neurons_save[given_num]
-        return None
+        return -1
+
+    def is_min_image_num(self, image_num: int) -> bool:
+        for key in self.neurons_save:
+            if key < image_num:
+                return False
+        return True
 
     def swap(self, image_num: int, neuron_num1: str, neuron_num2: str) -> None:
         neuron = self.neurons_save[image_num]

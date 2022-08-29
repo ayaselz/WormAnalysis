@@ -241,11 +241,14 @@ class Assignment(object):
     def assign(self, image_num: int, candidate: list) -> None:
         # 设置现有的previous，current和candidates
         self.num = image_num
-        self.previous = self.neurons_list[image_num - 2]
+        try:
+            self.previous = self.neurons_list[image_num - 2]
+        except:
+            self.previous = -1
         self.currents = self.neurons_list[image_num - 1]
         # 检查-1坐标
         for key in self.currents:
-            if self.currents[key] == [-1, -1]:
+            if self.currents[key][0] == -1:
                 self.currents[key] = self.previous[key]
         # 转换成ndarray格式
         self.previous = position_to_array(self.previous)
@@ -253,6 +256,9 @@ class Assignment(object):
         self.candidates = candidates_to_array(candidate)
         # 用计算结果赋值
         self.neurons_list[image_num] = self.results()
+
+    def add_neurons(self, image_num: int, neurons: dict) -> None:
+        self.neurons_list[image_num] = neurons
 
     def get_neurons(self, image_num: int) -> dict:
         return self.neurons_list[image_num]

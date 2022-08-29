@@ -303,7 +303,6 @@ class Image(object):
                     # brightness = self.bit16[row][column]
                     # potential_neurons.append([row, column, brightness])
                     potential_neurons.append([row, column])
-        print("在image的potential_neurons: ", potential_neurons)
         return potential_neurons
 
     def labelled(self, neurons: dict):
@@ -327,17 +326,14 @@ class Image(object):
         return labelled_image
 
     def inform(self, neurons: dict) -> ImageInform:
-        print("inform中: ")
         # inform on the right half
         max_brightness = 0
         max_row = 0
         max_column = 0
-        print("neurons: ", neurons)
         if neurons == {}:
             return ImageInform()
         for key in neurons:
             centre = neurons.get(key)
-            print("找到centre: ", self.bit8[centre[0]][centre[1]])
             if self.bit8[centre[0]][centre[1]] > max_brightness:
                 max_brightness = self.bit8[centre[0]][centre[1]]
                 max_row = centre[0]
