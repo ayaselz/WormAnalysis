@@ -254,8 +254,12 @@ class Assignment(object):
         # 用计算结果赋值
         self.neurons_list[image_num] = self.results()
 
+    def get_neurons(self, image_num: int) -> dict:
+        return self.neurons_list[image_num]
+
     def swap(self, image_num: int, neuron_num1: str, neuron_num2: str) -> None:
         position1 = self.neurons_list[image_num][neuron_num1]
         position2 = self.neurons_list[image_num][neuron_num2]
         # swap the position data of given tagged neurons in the given image
-        self.neurons_list[image_num][neuron_num1], self.neurons_list[image_num][neuron_num2] = position2, position1
+        self.neurons_list[image_num][neuron_num1] = position2
+        self.neurons_list[image_num][neuron_num2] = position1

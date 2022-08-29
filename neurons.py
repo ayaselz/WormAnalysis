@@ -18,7 +18,8 @@ class Neurons(object):
         self.header = position_header if position_header else 1
         self.__amount = amount
 
-        self.__potential: list = potential  # 不应该要potential，应该直接给结果；potential留给assign时接收
+        self.__potential: list = []  # 不应该要potential，应该直接给结果；potential留给assign时接收
+        self.physical_map_image = {}  # a map to find image position by physical position
         self.__assigned: dict = {}  # 重要：假设assigned之后都是储存的物理信息
 
     def physical_positions(self) -> list:
@@ -36,6 +37,7 @@ class Neurons(object):
             neuron_y = neuron[1]
             pp = [stage_x - (neuron_y - 512 / 4 * 3) * trans_ratio,
                   stage_y + (512 / 2 - neuron_x) * trans_ratio]
+            self.physical_map_image[pp] = neuron
             result.append(pp)
         return result
 
@@ -71,6 +73,7 @@ class Neurons(object):
 
         :return: a copy of the assigned neurons
         """
+        # 完备性
         if len(self.__assigned) < self.__amount:
             for i in range(self.__amount):
                 if str(i) not in self.__assigned.keys():
@@ -94,8 +97,8 @@ class NeuronData(object):
         # header: (追踪中心x，追踪中心y，pixel to len转换比例)
         self.position_header = []
         self.__positions = []
-        self.__saves = []
-        self.__neurons_save: list[Neurons] = []
+        self.__saves: dict[int, Neurons] = {}
+        self.__neurons_save: dict[int, Neurons] = {}
         # the amount of tracked neurons
         self.__amount = 1
 
@@ -182,25 +185,15 @@ class NeuronData(object):
                 csv_writer.writerow(data)
 
     @property
-    def neurons_save(self) -> list:
-        return self.__neurons_save.copy()
+    def neurons_save(self) -> dict[int, Neurons]:
+        return self.__neurons_save
 
     @neurons_save.setter
-    def neurons_save(self, neurons_save: list) -> None:
+    def neurons_save(self, neurons_save: dict) -> None:
         self.__neurons_save = neurons_save
 
-    def add_neurons(self, neurons: Neurons, insert_position: int = None) -> None:
-        # check duplicate
-        for item in self.__neurons_save:
-            if item.image_num == neurons.image_num:
-                index = self.__neurons_save.index(item)
-                self.__neurons_save[index] = neurons
-                return
-        # 待补充：如果保证没有重复neurons数据
-        if insert_position is None:
-            self.__neurons_save.append(neurons)
-        else:
-            self.__neurons_save.insert(insert_position, neurons)
+    def add_neurons(self, image_num: int, neurons: Neurons) -> None:
+        self.__neurons_save[image_num] = neurons
 
     @property
     def amount(self) -> int:
@@ -210,32 +203,15 @@ class NeuronData(object):
     def amount(self, amount: int) -> None:
         self.__amount = amount
 
-    def is_min_image_num(self, given_num) -> bool:
-        if not self.__neurons_save:
-            return True
-        for neurons in self.__neurons_save:
-            if neurons.image_num < given_num:
-                return False
-        return True
-
-    def is_second_min_image_num(self, given_num) -> bool:
-        if not self.__neurons_save:
-            return False
-        # find the min
-        min_num = 10000
-        for neurons in self.__neurons_save:
-            if neurons.image_num < min_num:
-                min_num = neurons.image_num
-        # whether the second min
-        if given_num <= min_num:
-            return False
-        for neurons in self.__neurons_save:
-            if neurons.image_num != min_num and neurons.image_num < given_num:
-                return False
-        return True
-
     def get_neurons(self, given_num: int) -> Neurons | None:
-        for neurons in self.__neurons_save:
-            if neurons.image_num == given_num:
-                return neurons
+        if given_num in self.__neurons_save.keys():
+            return self.__neurons_save[given_num]
         return None
+
+    def swap(self, image_num: int, neuron_num1: str, neuron_num2: str) -> None:
+        neuron = self.neurons_save[image_num]
+        position1 = neuron.assigned[neuron_num1]
+        position2 = neuron.assigned[neuron_num2]
+        # swap
+        neuron.assigned[neuron_num1] = position2
+        neuron.assigned[neuron_num2] = position1

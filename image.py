@@ -287,6 +287,7 @@ class Image(object):
         """
         Find the brightest points in the image as potential neurons. They will
         be further processed inside Neurons().
+        Structure: list[row, column, brightness].
         """
         potential_neurons = []
         image_max = np.max(self.bit8)
@@ -299,8 +300,10 @@ class Image(object):
                     continue
                 if surrender(self.bit8, row, column,
                              self.parameters.peak_circle):
+                    # brightness = self.bit16[row][column]
+                    # potential_neurons.append([row, column, brightness])
                     potential_neurons.append([row, column])
-        print("在image的potential_neurons，用的老方法，不应该为空啊", potential_neurons)
+        print("在image的potential_neurons: ", potential_neurons)
         return potential_neurons
 
     def labelled(self, neurons: dict):
