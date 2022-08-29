@@ -164,7 +164,7 @@ class NeuronData(object):
         if save_path == '':
             raise OpenFileError("Sava data path is empty")
         # write headers
-        with open(save_path, 'w', encoding="utf-8", newline="") as file:
+        with open(save_path, 'a', encoding="utf-8", newline='') as file:
             csv_writer = csv.writer(file)
             results_head = ['image_num',
                             'Right_row', 'Right_column', 'Right_brightness',
@@ -189,8 +189,20 @@ class NeuronData(object):
             image = images[key]
             for tag in neurons.assigned:
                 position = neurons.assigned[tag]
-                if position not in neurons.potential:
+                # print(type(position), position)
+                # print(type(neurons.potential), neurons.potential)
+
+                # for item in neurons.potential:
+                #     if item[0] == position[0] and item[1] == position[1]:
+                #         break
+                #     else:
+                #         print(neurons.physical_map_image)
+                #         position = neurons.physical_map_image[position]
+                if type(position) != list:  # might be ndarray
+                    position = position.tolist()
+                if position not in neurons.potential and neurons.physical_map_image:
                     position = neurons.physical_map_image[position]
+
                 row = position[0]
                 column = position[1]
                 brightness = image.bit16[row][column]
@@ -199,7 +211,7 @@ class NeuronData(object):
                 data.append(brightness)
 
             # open file and write in
-            with open(save_path, 'w', encoding="utf-8", newline="") as file:
+            with open(save_path, 'a', encoding="utf-8", newline='') as file:
                 csv_writer = csv.writer(file)
                 csv_writer.writerow(data)
 
