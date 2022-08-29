@@ -187,12 +187,7 @@ class MainWidget(QWidget):
             if len(csv_files) == 1:
                 csv_path = os.path.join(self.image_path, csv_files[0])
                 self.i_thread.neuron_data.position_path = csv_path
-
-    # def button_select_position_file(self):
-    #     position_file_name, _ = QFileDialog.getOpenFileName(self, 'Select file',
-    #                                                         '',
-    #                                                         'CSV Files(*.csv)')
-    #     self.i_thread.neuron_data.position_path = position_file_name
+                self.i_thread.assignment.unit = 1 if self.i_thread.neuron_data.position_header == 1 else self.i_thread.neuron_data.position_header[2]
 
     def button_next(self):
         self.image_num += 1
@@ -453,3 +448,4 @@ class MainWidget(QWidget):
         string = self.ui.box_neuron_amount.toPlainText()
         if string.isdigit():
             self.i_thread.neuron_data.amount = int(string)
+            self.i_thread.assignment.amount = int(string)

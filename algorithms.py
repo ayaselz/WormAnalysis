@@ -1,3 +1,4 @@
+from numpy.core._multiarray_umath import ndarray
 import numpy as np
 
 from neurons import Neurons
@@ -53,14 +54,14 @@ def coordinate(position: list):
     return np.array([position[0], position[1]])
 
 
-def position_to_array(neurons: Neurons | int) -> dict | int:
+def position_to_array(neurons: dict | int) -> dict | int:
     if neurons == -1:
         return -1
-    if not neurons.assigned:
+    if not neurons:
         return {}
     result = {}
-    for key in neurons.assigned:
-        result[key] = coordinate(neurons.assigned[key])
+    for key in neurons:
+        result[key] = coordinate(neurons[key])
     return result
 
 
@@ -72,17 +73,18 @@ def candidates_to_array(candidates: list) -> list:
 
 
 class Assignment(object):
-    def __init__(self, amount: int, candidates: Neurons,
-                 current_neurons: Neurons | int,
-                 previous_neurons: Neurons | int) -> None:
-        self.previous = position_to_array(previous_neurons)  # dict
-        self.currents = position_to_array(current_neurons)  # dict
-        self.candidates = candidates_to_array(candidates.potential)  # list
+    def __init__(self) -> None:
+        self.num = 0  # candidate image num, 随着image num和next last变化
+        # list: dict[image_num, neurons[neuron_tag, neuron_physical_coordinate]]
+        self.neurons_list: dict[int, dict[str, list]] = {}
+        self.previous = {}  # dict
+        self.currents = {}  # dict
+        self.candidates = []  # list
         # the relationship between the above threes:
         # previous neurons are in (n-1)th image, current neurons are in
         # (n)th image, candidates are in (n+1)th image
-        self.amount = amount
-        self.unit = candidates.header
+        self.amount: int = 1
+        self.unit: float = 1
         self.window_radius: float = 6 * self.unit
 
     def predicted_position(self) -> dict:
@@ -104,18 +106,18 @@ class Assignment(object):
             results[key] = []
             for item in self.candidates:
                 change = predicted[key] - item
-                if change[0] < self.window_radius \
-                        and change[1] < self.window_radius:
+                if change[0] < radius \
+                        and change[1] < radius:
                     results[key].append(item)
         # check and modify if under one key the item is empty
         for key in results:
             if not results[key]:
-                results = self.classify_candidates(self.window_radius + self.unit)
+                results = self.classify_candidates(radius + self.unit)
         return results
 
-    def compare(self):
-        """考量多种意外的candidate分布：如果某个key下的candidate为空？可能有predicate没有考量到预测错位的情况吗？"""
-        pass
+    # def compare(self):
+    #     """考量多种意外的candidate分布：如果某个key下的candidate为空？可能有predicate没有考量到预测错位的情况吗？"""
+    #     pass
 
     def best_candidate(self, neuron_key: int):
         # get neurons position in this group
@@ -124,7 +126,7 @@ class Assignment(object):
         current_x2 = self.currents[str(neuron_key + 1)]
         current_group = [current_x0, current_x1, current_x2]
         # potential results
-        candidates = self.classify_candidates()
+        candidates = self.classify_candidates(self.window_radius)
         k_range = range(len(candidates[str(neuron_key - 1)]))
         j_range = range(len(candidates[str(neuron_key)]))
         i_range = range(len(candidates[str(neuron_key + 1)]))
@@ -157,6 +159,13 @@ class Assignment(object):
             result[str(i - 1)] = [assign[0][0], assign[0][1]]
             result[str(i)] = [assign[1][0], assign[1][1]]
             result[str(i + 1)] = [assign[2][0], assign[2][1]]
+
+        # 不完备时，没有的坐标设置为-1
+        if len(result) < self.amount:
+            for i in range(self.amount):
+                if str(i) not in result.keys():
+                    result[str(i)] = [-1, -1]
+
         return result
 
     def result_for_1(self) -> dict:
@@ -171,6 +180,11 @@ class Assignment(object):
                     dist = current_dist
                     candidate = item
             result[key] = candidate
+
+        # 不完备时，设置-1
+        if len(result) < self.amount:
+            result["0"] = [-1, -1]
+
         return result
 
     def result_for_2(self) -> dict:
@@ -178,7 +192,7 @@ class Assignment(object):
         score = None
         length = len(self.candidates)
         if length == 0:
-            return result
+            return {"0": [-1, -1], "1": [-1, -1]}
         if length == 1:
             dist = 100000
             result_key = ''
@@ -187,6 +201,11 @@ class Assignment(object):
                             np.array(self.candidates[0])) < dist:
                     result_key = key
             result[result_key] = self.candidates[0]
+            # 完备性
+            for i in range(self.amount):
+                if str(i) not in result.keys():
+                    result[str(i)] = [-1, -1]
+
             return result
 
         for j in range(length):
@@ -201,6 +220,13 @@ class Assignment(object):
                 if (score is None) or (self.group_score(group) > score):
                     result = group
                     score = self.group_score(group)
+
+        # 不完备时，没有的坐标设置为-1
+        if len(result) < self.amount:
+            for i in range(self.amount):
+                if str(i) not in result.keys():
+                    result[str(i)] = [-1, -1]
+
         return result
 
     def group_score(self, group: dict):
@@ -212,3 +238,24 @@ class Assignment(object):
         score = - np.average(distances) - np.sqrt(np.var(distances))
         return score
 
+    def assign(self, image_num: int, candidate: list) -> None:
+        # 设置现有的previous，current和candidates
+        self.num = image_num
+        self.previous = self.neurons_list[image_num - 2]
+        self.currents = self.neurons_list[image_num - 1]
+        # 检查-1坐标
+        for key in self.currents:
+            if self.currents[key] == [-1, -1]:
+                self.currents[key] = self.previous[key]
+        # 转换成ndarray格式
+        self.previous = position_to_array(self.previous)
+        self.currents = position_to_array(self.currents)
+        self.candidates = candidates_to_array(candidate)
+        # 用计算结果赋值
+        self.neurons_list[image_num] = self.results()
+
+    def swap(self, image_num: int, neuron_num1: str, neuron_num2: str) -> None:
+        position1 = self.neurons_list[image_num][neuron_num1]
+        position2 = self.neurons_list[image_num][neuron_num2]
+        # swap the position data of given tagged neurons in the given image
+        self.neurons_list[image_num][neuron_num1], self.neurons_list[image_num][neuron_num2] = position2, position1

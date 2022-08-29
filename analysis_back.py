@@ -55,6 +55,7 @@ class ImageProcessingThread(QObject):
         self.is_paused = False
         self.is_killed = False
         self.neuron_data = NeuronData()
+        self.assignment = Assignment()
 
     def loop(self, parameters, image_num, image_path, flip, start, end):
         for i in range(start, end + 1):
