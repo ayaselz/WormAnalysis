@@ -71,6 +71,10 @@ class Neurons(object):
 
         :return: a copy of the assigned neurons
         """
+        if len(self.__assigned) < self.__amount:
+            for i in range(len(self.__assigned)):
+                if str(i) not in self.__assigned.keys():
+                    self.__assigned[str(i)] = [-1, -1]
         # 差个逻辑： 开始时没有neuron怎么办
         return self.__assigned
 

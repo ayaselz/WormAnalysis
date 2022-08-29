@@ -334,7 +334,7 @@ class Image(object):
             return ImageInform()
         for key in neurons:
             centre = neurons.get(key)
-            print("找到centree: ", self.bit8[centre[0]][centre[1]])
+            print("找到centre: ", self.bit8[centre[0]][centre[1]])
             if self.bit8[centre[0]][centre[1]] > max_brightness:
                 max_brightness = self.bit8[centre[0]][centre[1]]
                 max_row = centre[0]
