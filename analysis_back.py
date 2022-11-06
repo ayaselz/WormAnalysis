@@ -60,6 +60,8 @@ class ImageProcessingThread(QObject):
         self.images: dict[int, Image] = {}
 
     def loop(self, parameters, image_num, image_path, flip, start, end):
+        start_time = time.time()
+
         for i in range(start, end + 1):
             self.image_processing_loop(parameters, image_num, image_path, flip)
             image_num += 1
@@ -78,6 +80,9 @@ class ImageProcessingThread(QObject):
             if self.is_killed:
                 break
 
+        stop_time = time.time()
+        print('Runtime: ', (stop_time - start_time) * 10**3, "ms")
+
     def image_processing_loop(self, parameters: Parameters, image_num: int,
                               image_path: str, flip: bool) -> None:
         """
@@ -95,6 +100,7 @@ class ImageProcessingThread(QObject):
         # backup | neurons的备份代码:
         # neurons = helper(image.potential_neurons())
         if self.neuron_data.is_min_image_num(image_num):
+            # the amount of neurons
             amount = len(image.potential_neurons())
             self.neuron_data.amount = amount
             self.assignment.amount = amount
@@ -111,12 +117,11 @@ class ImageProcessingThread(QObject):
             neurons.assigned = self.assignment.get_neurons(image_num)
 
         # update this-image inform with calculated neurons | 更新图片信息
-
         img_inform = image.inform(neurons.assigned)
         # add this information into save list | 将该image对应的信息加入保存列表
         self.neuron_data.add_neurons(image_num, neurons)
         self.neuron_data.add_data(image_num, img_inform)
-
+        # 画了标签的图片显示在UI上面
         labelled_img = image.labelled(neurons.assigned)
         q_pixmap = cv_to_qpix(labelled_img)
         self.show_img_signal_loop.emit(q_pixmap, img_inform)
