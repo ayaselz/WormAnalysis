@@ -23,6 +23,7 @@ class Neurons(object):
         self.__assigned: dict = {}  # 重要：假设assigned之后都是储存的物理信息
 
     def physical_positions(self) -> list:
+        print("enter neurons.py physical_positions")
         # influenced by original pixel size, the size of image (1200x1200),
         # and transferred image (512x512)
         result = []
@@ -58,7 +59,9 @@ class Neurons(object):
         # if physical inform is given, return actual coordinates
         # otherwise picture position only
         if self.position == [0, 0, 0, 0] and self.header == 1:
+            print("without physical position")
             return self.__potential
+        print("with physical position")
         return self.physical_positions()
 
     @potential.setter
@@ -98,7 +101,9 @@ class NeuronData(object):
         """
         NeuronData init
         """
+        print("可能重置了NeuronData")
         self.__position_path = ""
+        print("position_path", self.__position_path)
         # header: (追踪中心x，追踪中心y，pixel to len转换比例)
         self.position_header = []
         self.__positions = []
@@ -119,7 +124,7 @@ class NeuronData(object):
     @position_path.setter
     def position_path(self, position_path: str) -> None:
         # 待补充：检测不是csv文件，或者内容有误等情况的完善
-        if self.__position_path == "":
+        if position_path == "":
             raise OpenFileError("Position file not selected or path not exist")
         self.__position_path = position_path
         # 准备将csv位置信息内容写入实例

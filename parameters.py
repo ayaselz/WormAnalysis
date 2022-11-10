@@ -16,8 +16,8 @@ class Parameters(object):
                  label_radius: int = 7,
                  right_black: int = 0, left_black: int = 0,
                  right_black_bias: int = 0, left_black_bias: int = 0,
-                 right_circle: int = 5, right_ratio: float = 0.6,
-                 left_circle: int = 5, left_ratio: float = 0.6) -> None:
+                 right_circle: int = 5, right_ratio: float = 0.4,
+                 left_circle: int = 5, left_ratio: float = 0.4) -> None:
         """
         Instantiation
 

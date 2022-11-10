@@ -87,6 +87,8 @@ class Assignment(object):
         self.unit: float = 1
         self.window_radius: float = 6 * self.unit
 
+        self.prediction: dict[str, list] = {}
+
     def predicted_position(self) -> dict:
         # 当没有previous时，入第二张图
         if self.previous == -1:
@@ -99,34 +101,67 @@ class Assignment(object):
 
         return predicted_position
 
-    def classify_candidates(self, radius: float = 0) -> dict[str, list]:
+    def classify_candidates(self, radius: float = 0):
         results = {}
         predicted = self.predicted_position()
         for key in predicted:
             results[key] = []
             for item in self.candidates:
                 change = predicted[key] - item
-                if change[0] < radius \
-                        and change[1] < radius:
+                if abs(change[0]) < radius and abs(change[1]) < radius:
                     results[key].append(item)
+        self.prediction = results
         # check and modify if under one key the item is empty
         for key in results:
             if not results[key]:
-                results = self.classify_candidates(radius + self.unit)
-        return results
+                self.classify_candidates(radius + self.unit)
+                break
+        # self.prediction = results
+        # return results
 
     # def compare(self):
     #     """考量多种意外的candidate分布：如果某个key下的candidate为空？可能有predicate没有考量到预测错位的情况吗？"""
     #     pass
 
+    def remove_best_matches(self, neuron_key, array_list: list):
+        for tag in range(neuron_key + 2, self.amount):
+            for item in array_list:
+                for compare in self.prediction[str(tag)].copy():
+                    if list(compare) != list(item):
+                        continue
+                    else:
+                        after_remove = []
+                        for coor in self.prediction[str(tag)]:
+                            if list(coor) != list(item):
+                                after_remove.append(coor)
+                        self.prediction[str(tag)] = after_remove
+        print("此时的self.prediction", self.prediction)
+                # these schemas cannot be implemented with unknown reason.
+                # essentially, cannot compare "compare" and "item" (np?)
+                # schema 1
+                # lists = self.prediction[str(tag)].copy()
+                # for compare in lists:
+                #     if (compare != item):
+                #         continue
+                #     else:
+                #         self.prediction[str(tag)].remove(item)
+                # schema 2
+                # if item in self.prediction[str(tag)]:
+                #     self.prediction[str(tag)].remove(item)
+                # schema 3
+                # if lists.count(item) != 0:
+                #     self.prediction[str(tag)].remove(item)
+
     def best_candidate(self, neuron_key: int):
+        print("enter best_candidate")
         # get neurons position in this group
         current_x0 = self.currents[str(neuron_key - 1)]
         current_x1 = self.currents[str(neuron_key)]
         current_x2 = self.currents[str(neuron_key + 1)]
         current_group = [current_x0, current_x1, current_x2]
         # potential results
-        candidates = self.classify_candidates(self.window_radius)
+        # candidates = self.classify_candidates(self.window_radius)
+        candidates = self.prediction
         k_range = range(len(candidates[str(neuron_key - 1)]))
         j_range = range(len(candidates[str(neuron_key)]))
         i_range = range(len(candidates[str(neuron_key + 1)]))
@@ -135,27 +170,38 @@ class Assignment(object):
         for k in k_range:
             for j in j_range:
                 for i in i_range:
-                    candidate_group = [candidates[str(neuron_key - 1)][k],
-                                       candidates[str(neuron_key)][j],
-                                       candidates[str(neuron_key + 1)][i]]
+                    c1 = candidates[str(neuron_key - 1)][k]
+                    c2 = candidates[str(neuron_key)][j]
+                    c3 = candidates[str(neuron_key + 1)][i]
+                    # if c1 == c2 or c2 == c3 or c3 == c1:
+                    #     print("发现了重复项")
+                    #     continue
+                    candidate_group = [c1, c2, c3]
                     score = quality_score(current_group, candidate_group)
                     if result_score is None or score > result_score:
                         match_result = candidate_group
+                    # remove the item of best scored in the subsequent combinations
+                    self.remove_best_matches(neuron_key, match_result)
+
         return match_result, result_score
 
     def results(self) -> dict:
         """储存的position都是物理信息！！！"""
         # 待补充：如果神经元数量小于3怎么处理？
         # 待修正：重叠部分怎么修正？肯定不能直接覆盖
+        print("enter results")
         if self.amount == 1:
             return self.result_for_1()
         if self.amount == 2:
             return self.result_for_2()
 
+        self.classify_candidates(self.window_radius)
+        print("预测的分类", self.prediction)
         result = {}
         for i in range(1, self.amount - 1):
             # 从ndarray转化成普通list
             assign, _ = self.best_candidate(i)
+            print("对", i, "个循环的结果是", assign)
             result[str(i - 1)] = [assign[0][0], assign[0][1]]
             result[str(i)] = [assign[1][0], assign[1][1]]
             result[str(i + 1)] = [assign[2][0], assign[2][1]]
@@ -166,6 +212,8 @@ class Assignment(object):
                 if str(i) not in result.keys():
                     result[str(i)] = [-1, -1]
 
+        print("最终结果：", result)
+        print()
         return result
 
     def result_for_1(self) -> dict:

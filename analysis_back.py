@@ -94,6 +94,7 @@ class ImageProcessingThread(QObject):
         :param flip:
         :return:
         """
+        print("图片", image_num)
         image = Image(image_path, image_num, parameters, flip)
         self.images[image_num] = image
         # neurons, including the assignment algorithm | 生成Neurons（包含了匹配算法）
@@ -102,6 +103,7 @@ class ImageProcessingThread(QObject):
         if self.neuron_data.is_min_image_num(image_num):
             # the amount of neurons
             amount = len(image.potential_neurons())
+            print("神经元数量", amount)
             self.neuron_data.amount = amount
             self.assignment.amount = amount
         neurons = Neurons(image_num,
@@ -109,6 +111,9 @@ class ImageProcessingThread(QObject):
                           self.neuron_data.position_header,
                           self.neuron_data.amount,
                           image.potential_neurons())
+        print("位置信息", self.neuron_data.get(image_num), self.neuron_data.position_header)
+        print("位置文件路径", self.neuron_data.position_path)
+        print("图片中识别出的亮点", image.potential_neurons())
         if self.neuron_data.is_min_image_num(image_num):
             neurons.assigned = neurons.to_dict()
             self.assignment.add_neurons(image_num, neurons.assigned)

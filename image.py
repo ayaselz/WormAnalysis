@@ -236,7 +236,7 @@ def find_left_black(image, black_bias=0):
 def find_left_centre(row: int, column: int,
                      bias_row: int = 0, bias_column: int = 0):
     left_centre_row = row + bias_row
-    left_centre_column = column - 520 + bias_column #255->500
+    left_centre_column = column - 520 + bias_column #255->520
     return left_centre_row, left_centre_column
 
 
@@ -267,6 +267,31 @@ def left_array(image, row, column, right_light_array, radius: int, black):
     left_light_array -= black
     left_light_array = np.where(left_light_array < 0, 0, left_light_array)
     return left_light_array
+
+
+def reduce_redundancy(list1: list) -> list:
+    if len(list1) < 2:
+        return list1
+    num = len(list1)
+    item = 0
+    list2 = list1.copy()
+    while item < num:
+        compare = 0
+
+        while compare < len(list2):
+            if item == compare:
+                compare += 1
+                continue
+            if abs(list1[item][0] - list2[compare][0]) < 3 \
+                    and abs(list1[item][1] - list2[compare][1]) < 3 \
+                    and list1[item] != list2[compare]:
+                list1.remove(list1[item])
+                num -= 1
+            compare += 1
+
+        item += 1
+
+    return list1
 
 
 class Image(object):
@@ -307,7 +332,9 @@ class Image(object):
                     # brightness = self.bit16[row][column]
                     # potential_neurons.append([row, column, brightness])
                     potential_neurons.append([row, column])
-        return potential_neurons
+        # reduce redundancy (highlights closed to others are regarded as one)
+        result = reduce_redundancy(potential_neurons)
+        return result
 
     def labelled(self, neurons: dict):
         # --- 设置一个默认的neurons？ ---

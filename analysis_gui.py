@@ -174,7 +174,7 @@ class MainWidget(QWidget):
             csv_files = []
             for file in files:
                 if file.endswith(".csv"):
-                    csv_files.append()
+                    csv_files.append(os.path.join(root, file))
             if not csv_files:
                 QMessageBox.warning(
                     self.ui,
@@ -288,6 +288,20 @@ class MainWidget(QWidget):
         self.i_thread.start_image_process_thread_signal.emit(
             self.parameters,
             self.image_num, path, self.flip)
+
+        # automatically select the csv path
+        for root, dirs, files in os.walk(self.image_path):
+            csv_files = []
+            for file in files:
+                if file.endswith(".csv"):
+                    csv_files.append(os.path.join(root, file))
+            if len(csv_files) == 1:
+                csv_path = os.path.join(self.image_path, csv_files[0])
+                self.i_thread.neuron_data.position_path = csv_path
+                self.i_thread.assignment.unit = 1 if self.i_thread.neuron_data.position_header == 1 else \
+                self.i_thread.neuron_data.position_header[2]
+                print("neuron data ", self.i_thread.neuron_data.position_header)
+                print(self.i_thread.neuron_data.get(1))
 
     def initialization_parameter(self):
         self.ui.textEdit_alpha.setText(str(self.parameters.alpha))
