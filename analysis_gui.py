@@ -99,7 +99,7 @@ class MainWidget(QWidget):
         self.i_thread.show_img_signal.connect(self.show_image)
         self.i_thread.show_img_signal_loop.connect(self.show_image_loop)
         self.i_thread.loop_signal.connect(self.i_thread.loop)
-        # 开启线程,一直挂在后台
+        # 后端，开启线程,一直挂在后台
         self.thread.start()
 
         # 部件处理
@@ -215,7 +215,8 @@ class MainWidget(QWidget):
 
     def button_kill(self):
         self.i_thread.is_killed = True
-        self.i_thread.neuron_data.save_data(self.save_path)
+        images = self.i_thread.images
+        self.i_thread.neuron_data.save_data(images, self.save_path)
 
     def button_pause(self):
         if not self.i_thread.is_paused:
@@ -256,6 +257,7 @@ class MainWidget(QWidget):
         # for i in range(start, end + 1):
         # if self.stop:
         #     break
+        # self.i_thread.loop(self.parameters, self.image_num, path, self.flip, start, end)
         self.i_thread.loop_signal.emit(self.parameters,
                                        self.image_num, path,
                                        self.flip, start, end)
@@ -341,6 +343,7 @@ class MainWidget(QWidget):
     def show_image(self, q_pixmap, img_inform: ImageInform):
         # 用于显示图片
         self.ui.label_image.setPixmap(q_pixmap)
+        self.ui.label_image.setScaledContents(True)
         # 用于刷新image information
         self.img_inform = img_inform
         self.set_result()
@@ -351,6 +354,7 @@ class MainWidget(QWidget):
 
     def show_image_loop(self, q_pixmap, img_inform: ImageInform):
         self.ui.label_image.setPixmap(q_pixmap)
+        self.ui.label_image.setScaledContents(True)
         self.img_inform = img_inform
         self.set_result()
         self.results.append(img_inform)

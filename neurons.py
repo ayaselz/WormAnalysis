@@ -25,7 +25,6 @@ class Neurons(object):
     def physical_positions(self) -> list:
         # influenced by original pixel size, the size of image (1200x1200),
         # and transferred image (512x512)
-        # 没有stage这些信息怎么处理？
         result = []
         trans_ratio = self.header if self.header == 1 else self.header[2]
         stage_x = self.position[0]
@@ -87,12 +86,18 @@ class Neurons(object):
 
 
 class NeuronData(object):
+    """
+    This is NeuronData.
+    """
     # （后端类实例需要一个self.data，在选择position file的button函数中需要传递路径）
     # 用于储存position信息（通过导入的csv文件；若无则空），
     # 处理csv的相关操作（给出对应序号图片的位置信息，读写csv），
     # 保存分析时的data结果（不保存图片，只保存Neurons；结果用于写入csv）（注意和现有ui的results有什么区别）
     # 最后通过stop按键触发保存
     def __init__(self) -> None:
+        """
+        NeuronData init
+        """
         self.__position_path = ""
         # header: (追踪中心x，追踪中心y，pixel to len转换比例)
         self.position_header = []
@@ -153,7 +158,7 @@ class NeuronData(object):
         modification. If this information has been stored (check by image
         number), replace the previous one. Otherwise, append the list.
 
-        :param image_num:
+        :param image_num: the number of image
         :param img_inform: the given image information
         """
         self.saves[image_num] = img_inform
@@ -164,7 +169,7 @@ class NeuronData(object):
         if save_path == '':
             raise OpenFileError("Sava data path is empty")
         # write headers
-        with open(save_path, 'w', encoding="utf-8", newline="") as file:
+        with open(save_path, 'a', encoding="utf-8", newline='') as file:
             csv_writer = csv.writer(file)
             results_head = ['image_num',
                             'Right_row', 'Right_column', 'Right_brightness',
@@ -189,8 +194,20 @@ class NeuronData(object):
             image = images[key]
             for tag in neurons.assigned:
                 position = neurons.assigned[tag]
-                if position not in neurons.potential:
+                # print(type(position), position)
+                # print(type(neurons.potential), neurons.potential)
+
+                # for item in neurons.potential:
+                #     if item[0] == position[0] and item[1] == position[1]:
+                #         break
+                #     else:
+                #         print(neurons.physical_map_image)
+                #         position = neurons.physical_map_image[position]
+                if type(position) != list:  # might be ndarray
+                    position = position.tolist()
+                if position not in neurons.potential and neurons.physical_map_image:
                     position = neurons.physical_map_image[position]
+
                 row = position[0]
                 column = position[1]
                 brightness = image.bit16[row][column]
@@ -199,7 +216,7 @@ class NeuronData(object):
                 data.append(brightness)
 
             # open file and write in
-            with open(save_path, 'w', encoding="utf-8", newline="") as file:
+            with open(save_path, 'a', encoding="utf-8", newline='') as file:
                 csv_writer = csv.writer(file)
                 csv_writer.writerow(data)
 

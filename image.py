@@ -1,3 +1,7 @@
+"""
+image package
+"""
+
 import os.path
 import numpy as np
 import cv2
@@ -113,7 +117,7 @@ def draw_rectangle(image, row: int, column: int,
 
 class ImageInform(object):
     """
-    Restore image information for each flame.
+    Restore image information for each frame.
     """
 
     def __init__(self, num: int = None,
@@ -232,7 +236,7 @@ def find_left_black(image, black_bias=0):
 def find_left_centre(row: int, column: int,
                      bias_row: int = 0, bias_column: int = 0):
     left_centre_row = row + bias_row
-    left_centre_column = column - 255 + bias_column
+    left_centre_column = column - 520 + bias_column #255->500
     return left_centre_row, left_centre_column
 
 
