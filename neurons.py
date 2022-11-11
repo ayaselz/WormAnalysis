@@ -255,6 +255,8 @@ class NeuronData(object):
                 csv_writer = csv.writer(file)
                 csv_writer.writerow(data)
 
+        print("=== Data has been saved ===")
+
     # @property
     # def neurons_save(self) -> dict[int, Neurons]:
     #     return self.neurons_save
