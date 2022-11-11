@@ -11,10 +11,13 @@ from exceptions import OpenImageError
 
 
 def open_image(path: str, num: int, flip: bool):
-    """Helper function to import image data from path. Return 16-bit and
+    """
+    Helper function to import image data from path. Return 16-bit and
     8-bit images for further operation.
-
-    :param
+    :param path: image path
+    :param num: the number of image
+    :param flip: the value representing the image status of flip
+    :return:
     """
     if path is None or path == "":
         raise OpenImageError(f"Image path is empty. Image number: {num}")
@@ -54,10 +57,10 @@ def transfer_16bit_to_8bit(image_path: str):
 def surrender(image, row: int, column: int, circle: int) -> bool:
     """
     Helper function for Image.potential_neurons().
-    :param image:
-    :param row:
-    :param column:
-    :param circle:
+    :param image: 16 bits
+    :param row: x coordinate of the point
+    :param column: y coordinate of the point
+    :param circle: the size determining the surrender range
     :return: true iff the point in (row, column) is a highlight comparing to
     pixels around
     """
@@ -69,13 +72,12 @@ def surrender(image, row: int, column: int, circle: int) -> bool:
 
 def surrender_value_compare(image, row: int, column: int, radius: int) -> bool:
     """
-    Helper function for function surrender(),
-    to compare highlight round by round.
-    :param image:
-    :param row:
-    :param column:
-    :param radius:
-    :return:
+    Helper function for function surrender(), to compare highlight round by round.
+    :param image: 16 bits
+    :param row: x coordinate of the point
+    :param column: y coordinate of the point
+    :param radius: the comparing range
+    :return: true if the point is the max bright point comparing to the surrondings
     """
     value = image[row][column]
     for i in range(0, 2 * radius + 1):
@@ -101,13 +103,12 @@ def draw_rectangle(image, row: int, column: int,
     """
     Helper to draw rectangle and labelled text for the given point (column,row).
 
-    :param image:
-    :param column:
-    :param row:
-    :param label_text:
-    :param radius:
+    :param image: 16 bits
+    :param column: y coordinate of the rectangle center
+    :param row: x coordinate of the rectangle center
+    :param label_text: the number text of neurons
+    :param radius: the size of the rectangle
     :param text_place:
-    :return:
     """
     cv2.rectangle(image, (column - radius, row - radius),
                   (column + radius, row + radius), 255)
@@ -122,9 +123,21 @@ class ImageInform(object):
 
     def __init__(self, num: int = None,
                  right_row: int = None, right_column: int = None,
-                 right_brightness = None, right_black = None,
+                 right_brightness=None, right_black=None,
                  left_row: int = None, left_column: int = None,
-                 left_brightness = None, left_black = None):
+                 left_brightness=None, left_black=None):
+        """
+        Constructor of ImageInform.
+        :param num: the number of image
+        :param right_row: x coordinate of the most bright neuron on the right
+        :param right_column: y coordinate of the most bright neuron on the right
+        :param right_brightness: brightness of the most bright neuron on the right
+        :param right_black: background brightness value on the right
+        :param left_row: x coordinate of the most bright neuron on the left
+        :param left_column: y coordinate of the most bright neuron on the left
+        :param left_brightness: brightness of the most bright neuron on the left
+        :param left_black: background brightness value on the left
+        """
         self.__num = num
         self.__right_row = right_row
         self.__right_column = right_column
@@ -218,6 +231,12 @@ class ImageInform(object):
 
 
 def find_right_black(image, black_bias=0):
+    """
+    Calculate a value to represent the black color of the right part
+    :param image: 16 bits
+    :param black_bias:
+    :return:
+    """
     right_image = image[:240, 388:450]
     minimum = np.min(right_image)
     if minimum < 32862:
@@ -236,7 +255,7 @@ def find_left_black(image, black_bias=0):
 def find_left_centre(row: int, column: int,
                      bias_row: int = 0, bias_column: int = 0):
     left_centre_row = row + bias_row
-    left_centre_column = column - 520 + bias_column #255->500
+    left_centre_column = column - 520 + bias_column  # 255->500
     return left_centre_row, left_centre_column
 
 
@@ -310,7 +329,11 @@ class Image(object):
         return potential_neurons
 
     def labelled(self, neurons: dict):
-        # --- 设置一个默认的neurons？ ---
+        """
+        Label the image with the given neurons (tags and positions)
+        :param neurons: the given neurons
+        :return: the labelled image
+        """
         labelled_image = self.image_bright(self.bit8,
                                            self.parameters.alpha,
                                            self.parameters.beta)
@@ -330,6 +353,11 @@ class Image(object):
         return labelled_image
 
     def inform(self, neurons: dict) -> ImageInform:
+        """
+        Calculate the information on this image with the given neuron position
+        :param neurons: the given neurons
+        :return: the information of this image
+        """
         # inform on the right half
         max_brightness = 0
         max_row = 0

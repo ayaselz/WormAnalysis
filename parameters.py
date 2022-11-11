@@ -7,7 +7,7 @@ __version__ = "2.0"
 class Parameters(object):
     """
     This class contains several parameters, including the scope when
-    analyzing images.
+    analyzing images. Details are in Yuliang Liu's report, manual, and codes.
     """
 
     def __init__(self, alpha: int = 3, beta: int = 0,
@@ -19,9 +19,7 @@ class Parameters(object):
                  right_circle: int = 5, right_ratio: float = 0.6,
                  left_circle: int = 5, left_ratio: float = 0.6) -> None:
         """
-        Instantiation
-
-        :param
+        Constructor of Parameters
         """
         self.__alpha = alpha
         self.__beta = beta
