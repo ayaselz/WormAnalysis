@@ -1,3 +1,18 @@
+"""
+This file includes classes Neurons and NeuronData. Neurons is a class to process
+coordinate transformation in one specific image, save recognized highlights
+from Image(), keep the result of tracking algorithm from Assignment() and
+bridges tracking algorithms to the other part of the software. NeuronData is a
+global class initialized at the beginning of back end, saving physical
+position info (if exists), image info for images in form of ImageInform and
+data of Neurons().
+
+该文件包括类 Neurons 和 NeuronData。 Neurons()是一个类，用于处理一个特定图像中的坐标
+变换、储存Image() 识别出的亮点和Assignment() 的跟踪算法的结果、并将跟踪算法连接到软件
+的其他部分。 NeuronData 是一个在后端开始初始化的全局类，用于保存物理位置信息（如果存
+在）、ImageInform 形式的图像的图像信息和 Neurons() 的数据。
+"""
+
 import csv
 
 from image import ImageInform, Image
@@ -5,26 +20,39 @@ from exceptions import OpenFileError
 
 
 class Neurons(object):
-    # 要导入csv对应的position信息（如果为空，则只分析图片）
-    # 对应image的序号
-    # >>> 重要：要收取ui的信号，获取当前应该分析的neuron的个数
-    # 按照筛选层次定义methods（读取亮点，比较周围亮点，neurons指定数量的筛选，现在的相似三角形算法）
-    # 算法现有问题：assign（等实现后比较结果），如果小于neurons数量怎么定
+    """
+    Neuron positions in a single image.
+    """
     def __init__(self, image_num: int,
                  position_data: list, position_header: list,
                  amount: int, potential: list) -> None:
-        self.image_num = image_num  # may not start from 0
-        self.position = position_data if position_data else [0, 0, 0, 0]  # 如果为空怎么处理，格式不对怎么办
+        """
+        Constructor of Neurons
+        :param image_num: the number of image
+        :param position_data: physical position data read from CSV file;
+            [0, 0, 0, 0] if none is read
+        :param position_header: head data read from CSV file; 1 if none is read
+        :param amount: the number of neurons in this image
+        :param potential: recognized highlights from Image(), working as
+        potential neurons
+        """
+        self.image_num = image_num
+        self.position = position_data if position_data else [0, 0, 0, 0]
         self.header = position_header if position_header else 1
         self.__amount = amount
-
-        self.__potential: list = potential  # 不应该要potential，应该直接给结果；potential留给assign时接收
-        self.physical_map_image = {}  # a map to find image position by physical position
-        self.__assigned: dict = {}  # 重要：假设assigned之后都是储存的物理信息
+        self.__potential: list = potential
+        # a map to find image position by physical position
+        self.physical_map_image = {}
+        # keep the result of tracking algorithm from Assignment()
+        self.__assigned: dict = {}
 
     def physical_positions(self) -> list:
-        # influenced by original pixel size, the size of image (1200x1200),
-        # and transferred image (512x512)
+        """
+        Transform the pixel-based neuron position into physical positions.
+        :return: a list of transformed potential neurons
+        """
+        # notes: might be influenced by original pixel size, the size of
+        # image (currently 1200x1200),
         result = []
         trans_ratio = self.header if self.header == 1 else self.header[2]
         stage_x = self.position[0]
@@ -34,20 +62,23 @@ class Neurons(object):
         for neuron in self.potential:
             neuron_x = neuron[0]
             neuron_y = neuron[1]
-            pp = [stage_x - (neuron_y - 512 / 4 * 3) * trans_ratio,
-                  stage_y + (512 / 2 - neuron_x) * trans_ratio]
+            pp = [stage_x - (neuron_y - 1200 / 4 * 3) * trans_ratio,
+                  stage_y + (1200 / 2 - neuron_x) * trans_ratio]
             self.physical_map_image[pp] = neuron
             result.append(pp)
         return result
 
     def to_dict(self) -> dict:
-        """仅为第一张图片使用"""
-        # 待修正： 后期考虑结合amount修正neurons
+        """
+        Process the assignment if the number of image is 1
+        :return: dict[neuron_num: str, coordinate: ndarray]
+        """
         result = {}
         i = 0
         for item in self.__potential:
             result[str(i)] = item
             i += 1
+        # update the info
         # 更新信息
         self.__amount = len(result)
         self.assigned = result
@@ -55,6 +86,11 @@ class Neurons(object):
 
     @property
     def potential(self) -> list:
+        """
+        The getter of highlights from Image(). Physical positions are
+        automatically implemented.
+        :return: potential neurons
+        """
         # if physical inform is given, return actual coordinates
         # otherwise picture position only
         if self.position == [0, 0, 0, 0] and self.header == 1:
@@ -68,10 +104,11 @@ class Neurons(object):
     @property
     def assigned(self) -> dict:
         """
-        return the assigned and ordered neurons of the (image_num)th image
+        Return the assigned and ordered neurons of the (image_num)th image
 
         :return: the assigned neurons
         """
+        # completeness
         # 完备性
         if len(self.__assigned) < self.__amount:
             for i in range(self.__amount):
@@ -87,7 +124,7 @@ class Neurons(object):
 
 class NeuronData(object):
     """
-    This is NeuronData.
+    Class containing Neuron and ImageInform.
     """
     # （后端类实例需要一个self.data，在选择position file的button函数中需要传递路径）
     # 用于储存position信息（通过导入的csv文件；若无则空），
@@ -96,10 +133,9 @@ class NeuronData(object):
     # 最后通过stop按键触发保存
     def __init__(self) -> None:
         """
-        NeuronData init
+        NeuronData constructor
         """
         self.__position_path = ""
-        # header: (追踪中心x，追踪中心y，pixel to len转换比例)
         self.position_header = []
         self.__positions = []
         self.__saves: dict[int, ImageInform] = {}
@@ -118,21 +154,20 @@ class NeuronData(object):
 
     @position_path.setter
     def position_path(self, position_path: str) -> None:
-        # 待补充：检测不是csv文件，或者内容有误等情况的完善
+        # check the existence of file
         if self.__position_path == "":
             raise OpenFileError("Position file not selected or path not exist")
         self.__position_path = position_path
+        # read the CSV data
         # 准备将csv位置信息内容写入实例
         with open(position_path) as file:
             reader = list(csv.reader(file))
             try:
                 self.position_header = reader[0]
-                # 如果position文件的格式改变，需要更改这里的数字1
                 self.__positions = reader[1:]
             except:
                 print(f"Wrong format of csv file or empty csv file.")
                 self.position_header = []
-                # 如果position文件的格式改变，需要更改这里的数字1
                 self.__positions = []
 
     def get(self, image_num: int) -> list:
@@ -152,7 +187,6 @@ class NeuronData(object):
         self.__saves = saves
 
     def add_data(self, image_num: int, img_inform: ImageInform) -> None:
-        # 待补充：目前data采用key为0的neuron的数据
         """
         Add the given image information into saves for future save or
         modification. If this information has been stored (check by image
@@ -164,8 +198,9 @@ class NeuronData(object):
         self.saves[image_num] = img_inform
 
     def save_data(self, images: dict[int, Image], save_path: str = '') -> None:
-        # 待补充：尚未链接信号与槽函数（预计在ui的save data里面
-        # 注意：现在只是正常运行程序，这个方法对应的结果还未测试
+        """
+        Executing at the end of analysis after clicking Stop button.
+        """
         if save_path == '':
             raise OpenFileError("Sava data path is empty")
         # write headers
@@ -243,8 +278,8 @@ class NeuronData(object):
         """
         Return Neurons type with the given tag.
 
-        :param given_num:
-        :return:
+        :param given_num: the number of image
+        :return: Neurons()
         """
         if given_num in self.neurons_save.keys():
             return self.neurons_save[given_num]
@@ -257,6 +292,14 @@ class NeuronData(object):
         return True
 
     def swap(self, image_num: int, neuron_num1: str, neuron_num2: str) -> None:
+        """
+        Exchange the information in neurons_saves of the specified neurons
+        in the specified image.
+        :param image_num: the number of the specified image
+        :param neuron_num1: the number of the specified neuron
+        :param neuron_num2: the other number of the specified neuron
+        :return:
+        """
         neuron = self.neurons_save[image_num]
         position1 = neuron.assigned[neuron_num1]
         position2 = neuron.assigned[neuron_num2]

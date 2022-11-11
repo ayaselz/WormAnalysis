@@ -1,10 +1,11 @@
 """
 The launcher for Worm Analyser. To run this software, click the green right
 arrow with an alternate text "Run 'launcher'", or right click this interface
-and select "Run 'launcher', or click the green right arrow on the code line 19.
+and select "Run 'launcher'", or click the green right arrow on the code line 24
+and select "Run 'launcher'".
 
 蠕虫分析器的启动器。 要运行此软件，请单击带有备用文本“Run 'launcher'”的绿色右箭头，
-或右键单击此界面并选择“Run 'launcher'，或单击代码行19上的绿色右箭头。
+或右键单击此界面并选择“Run 'launcher'"，或单击代码行24上的绿色右箭头并选择“Run 'launcher'"。
 """
 
 import PySide2
