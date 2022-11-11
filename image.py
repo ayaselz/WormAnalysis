@@ -1,5 +1,12 @@
 """
-image package
+This file includes classes Image() and ImageInform(). Image() can receive the
+file path of the specified image number and transfer it to 16-bit form (for
+calculation)and 8-bit one (for display on GUI). ImageInform() is calculated from
+Image() with given Parameters().
+
+该文件包括类 Image() 和 ImageInform()。 Image() 可以接收指定图像编号的文件路径，并将
+其转换为 16 位格式（用于计算）和 8 位格式（用于在 GUI 上显示）。 ImageInform() 是由
+Image() 和给定的Parameters()计算出来的。
 """
 
 import os.path
