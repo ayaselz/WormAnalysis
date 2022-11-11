@@ -1,5 +1,7 @@
 import csv
 
+import numpy as np
+
 from image import ImageInform, Image
 from exceptions import OpenFileError
 
@@ -14,7 +16,8 @@ class Neurons(object):
                  position_data: list, position_header: list,
                  amount: int, potential: list) -> None:
         self.image_num = image_num  # may not start from 0
-        self.position = position_data if position_data else [0, 0, 0, 0]  # 如果为空怎么处理，格式不对怎么办
+        self.position = position_data if position_data else [0, 0, 0,
+                                                             0]  # 如果为空怎么处理，格式不对怎么办
         self.header = position_header if position_header else 1
         self.__amount = amount
 
@@ -88,10 +91,36 @@ class Neurons(object):
         self.__assigned = assigned
 
 
+def find_right_black(image, black_bias=0):
+    right_image = image[:240, 388:450]
+    minimum = np.min(right_image)
+    if minimum < 32862:
+        return 32862
+    return minimum + black_bias
+
+
+def right_array(image, row: int, column: int, radius: int, ratio: float, black):
+    right_light_array = image[
+                        row - radius: row + radius + 1,
+                        column - radius: column + radius + 1]
+    right_light_array -= black
+    right_light_array = np.where(right_light_array < 0, 0, right_light_array)
+    right_light_array_max = np.max(right_light_array)
+    right_light_array = np.where(
+        right_light_array > (right_light_array_max * ratio), right_light_array,
+        0)
+    return right_light_array
+
+def mean_in_array(array):
+    mean = array[np.nonzero(array)].mean()
+    return mean
+
+
 class NeuronData(object):
     """
     This is NeuronData.
     """
+
     # （后端类实例需要一个self.data，在选择position file的button函数中需要传递路径）
     # 用于储存position信息（通过导入的csv文件；若无则空），
     # 处理csv的相关操作（给出对应序号图片的位置信息，读写csv），
@@ -168,7 +197,8 @@ class NeuronData(object):
         """
         self.saves[image_num] = img_inform
 
-    def save_data(self, images: dict[int, Image], save_path: str = '') -> None:
+    def save_data(self, parameters, images: dict[int, Image],
+                  save_path: str = '') -> None:
         # 待补充：尚未链接信号与槽函数（预计在ui的save data里面
         # 注意：现在只是正常运行程序，这个方法对应的结果还未测试
         if save_path == '':
@@ -215,7 +245,17 @@ class NeuronData(object):
 
                 row = position[0]
                 column = position[1]
-                brightness = image.bit16[row][column]
+                right_black = find_right_black(image.bit16,
+                                               parameters.right_black_bias)
+                right_light_array = right_array(image.bit16, row, column,
+                                                parameters.right_circle,
+                                                parameters.right_ratio,
+                                                right_black)
+                brightness = mean_in_array(right_light_array)
+                print("brightness2 of right and their mean: ")
+                print(brightness)
+                print(right_light_array)
+                # brightness = image.bit16[row][column]
                 data.append(row)
                 data.append(column)
                 data.append(brightness)

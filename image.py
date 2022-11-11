@@ -48,6 +48,8 @@ def transfer_16bit_to_8bit(image_path: str):
         = np.array(np.rint(
         255 * ((image_16bit - min_16bit) / (max_16bit - min_16bit))),
         dtype=np.uint8)
+    # another way
+    # image_8bit = cv2.convertScaleAbs(image_16bit, alpha=0.03)
     return image_16bit, image_8bit
 
 
@@ -376,6 +378,9 @@ class Image(object):
                                         self.parameters.right_ratio,
                                         right_black)
         right_brightness = mean_in_array(right_light_array)
+        print("brightness of right and their mean: ")
+        print(right_brightness)
+        print(right_light_array)
         # inform on the left half
         left_row, left_column \
             = find_left_centre(max_row, max_column,

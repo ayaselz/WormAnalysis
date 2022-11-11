@@ -181,7 +181,7 @@ class Assignment(object):
                     if result_score is None or score > result_score:
                         match_result = candidate_group
                     # remove the item of best scored in the subsequent combinations
-                    self.remove_best_matches(neuron_key, match_result)
+                    # self.remove_best_matches(neuron_key, match_result)
 
         return match_result, result_score
 
